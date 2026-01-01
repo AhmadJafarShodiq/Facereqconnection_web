@@ -1,0 +1,234 @@
+.app-sidebar.sidebar-yayasan {
+  background: linear-gradient(
+    180deg,
+    #3b82f6 0%,
+    #2563eb 50%,
+    #1e40af 100%
+  ) !important;
+}
+
+.app-main,
+.app-content {
+    background-color: #ffffff !important;
+}
+
+.sidebar-yayasan .sidebar-brand {
+  padding: 1rem !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.sidebar-yayasan .brand-text {
+  color: #ffffff !important;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.sidebar-yayasan .brand-image {
+  background: #ffffff;
+  border-radius: 50%;
+  padding: 3px;
+}
+
+/* ================= MENU UTAMA ================= */
+
+.sidebar-yayasan .nav-item {
+  margin: 4px 8px !important;
+}
+
+.sidebar-yayasan .nav-link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px;
+  color: #e0f2fe !important; /* light blue text */
+  border-radius: 12px !important;
+  padding: 10px 14px !important;
+  font-weight: 500;
+  transition: all 0.25s ease;
+}
+
+.sidebar-yayasan .nav-link p {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin: 0;
+}
+
+.sidebar-yayasan .nav-link:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  transform: translateX(4px);
+  color: #ffffff !important;
+}
+
+.sidebar-yayasan .nav-link.active {
+  background: rgba(255, 255, 255, 0.25) !important;
+  font-weight: 600;
+}
+
+.sidebar-yayasan .nav-icon,
+.sidebar-yayasan .nav-icon img {
+  filter: brightness(0) invert(1);
+  width: 18px;
+  height: 18px;
+}
+
+.sidebar-yayasan .nav-arrow {
+  color: rgba(255, 255, 255, 0.65) !important;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-yayasan .menu-open > .nav-link .nav-arrow {
+  transform: rotate(90deg);
+}
+
+.sidebar-yayasan .nav-treeview {
+  padding-left: 14px !important;
+  margin-top: 6px;
+}
+
+.sidebar-yayasan .nav-treeview .nav-link {
+  padding: 8px 14px 8px 38px !important;
+  font-size: 0.88rem;
+  border-radius: 10px !important;
+}
+
+.sidebar-yayasan .nav-treeview .nav-icon {
+  font-size: 0.45rem;
+  color: #bfdbfe !important; /* light blue icon */
+}
+
+.sidebar-yayasan .nav-treeview .nav-link:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.sidebar-yayasan .nav-treeview .nav-link.active {
+  background: rgba(255, 255, 255, 0.22) !important;
+  font-weight: 600;
+}
+
+.sidebar-yayasan::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-yayasan::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
+}
+
+.navbar-yayasan {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.navbar-yayasan .nav-link {
+  color: #2563eb !important;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.navbar-yayasan .nav-link:hover {
+  background: #eff6ff;
+  color: #1e40af !important;
+}
+
+.navbar-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.navbar-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #2563eb;
+}
+
+.navbar-user-name {
+  font-weight: 500;
+  color: #2563eb;
+}
+
+.navbar-yayasan .dropdown-menu {
+  border-radius: 12px;
+  min-width: 180px;
+}
+
+.navbar-yayasan .dropdown-item {
+  font-weight: 500;
+  padding: 10px 14px;
+}
+
+.navbar-yayasan .dropdown-item:hover {
+  background-color: #eff6ff;
+}
+
+.app-header.navbar {
+  background: linear-gradient(
+    90deg,
+    #eff6ff 0%,
+    #dbeafe 40%,
+    #ffffff 100%
+  );
+  border-bottom: 1px solid #bfdbfe;
+}
+
+.app-header .nav-link {
+  color: #2563eb !important;
+  font-weight: 500;
+  border-radius: 10px;
+  padding: 8px 12px;
+  transition: all 0.2s ease;
+}
+
+.app-header .nav-link:hover {
+  background-color: #dbeafe;
+  color: #1e40af !important;
+}
+
+.app-header .nav-link i {
+  color: #1e40af;
+}
+
+.app-header .navbar-badge {
+  font-size: 0.65rem;
+}
+
+.app-header .user-menu .user-image {
+  border: 2px solid #2563eb;
+}
+
+.app-header .dropdown-menu {
+  border-radius: 14px;
+  border: 1px solid #bfdbfe;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.app-header .user-header {
+  background: linear-gradient(
+    135deg,
+    #3b82f6,
+    #2563eb
+  ) !important;
+}
+
+.app-header .dropdown-menu a {
+  color: #2563eb;
+  font-weight: 500;
+}
+
+.app-header .dropdown-menu a:hover {
+  background-color: #eff6ff;
+}
+
+.app-header .user-footer .btn {
+  border-radius: 8px;
+}
+
+.app-header {
+  position: relative;
+  z-index: 1030;
+}
