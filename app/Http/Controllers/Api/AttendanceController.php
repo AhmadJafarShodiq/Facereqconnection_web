@@ -1,159 +1,442 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Attendance;
 use App\Models\School;
+use App\Models\Subject;
+use App\Models\User;
 use Carbon\Carbon;
 
 class AttendanceController extends Controller
 {
-    // ======================
-    // CHECK-IN
-    // ======================
-    public function checkIn(Request $request)
+    /* =========================
+     * SISWA - PRESENSI MAPEL
+     * ========================= */
+    public function studentCheckIn(Request $request)
     {
         $request->validate([
-            'latitude'  => 'required',
-            'longitude' => 'required',
-            'foto'      => 'nullable|image',
+            'subject_id' => 'required|integer|exists:subjects,id',
+            'latitude'   => 'required|numeric',
+            'longitude'  => 'required|numeric',
+            'foto'       => 'nullable|image'
         ]);
 
-        $user  = $request->user();
+        $user = $request->user();
+
+        if ($user->role !== 'siswa') {
+            return response()->json(['status'=>false,'message'=>'Unauthorized'],403);
+        }
+
+        // CEK PROFILE SISWA
+        if (!$user->profile || !$user->profile->kelas_id) {
+            return response()->json([
+                'status'=>false,
+                'message'=>'Data kelas siswa tidak lengkap'
+            ],422);
+        }
+
+        // CEK SUBJECT SESUAI KELAS SISWA
+        $subject = Subject::find($request->subject_id);
+        if (!$subject || $subject->kelas_id !== $user->profile->kelas_id) {
+            return response()->json([
+                'status'=>false,
+                'message'=>'Mapel tidak sesuai dengan kelas Anda'
+            ],403);
+        }
+
         $today = Carbon::today()->toDateString();
         $now   = now();
 
-    
-        if (Attendance::where('user_id', $user->id)->where('tanggal', $today)->exists()) {
-            return response()->json(['status'=>false,'message'=>'Sudah absen hari ini'],409);
-        }
-
-       
-        $jamMulaiAbsen = Carbon::createFromTime(4, 0, 0);
-        $jamAkhirAbsen = Carbon::createFromTime(9, 0, 0);
-
-        if ($now->lt($jamMulaiAbsen) || $now->gt($jamAkhirAbsen)) {
+        // CEK SUDAH ABSEN MAPEL INI HARI INI
+        if (Attendance::where([
+            'user_id'    => $user->id,
+            'tanggal'    => $today,
+            'subject_id' => $request->subject_id
+        ])->exists()) {
             return response()->json([
                 'status'=>false,
-                'message'=>'Absen masuk hanya bisa jam 07:00 - 09:00'
-            ],403);
+                'message'=>'Sudah absen mapel ini hari ini'
+            ],409);
         }
 
-        
+        // VALIDASI LOKASI
         $school = School::first();
-        $distance = $this->distance(
-            $school->latitude,
-            $school->longitude,
-            $request->latitude,
-            $request->longitude
-        );
+        if ($school) {
+            $distance = $this->distance(
+                $school->latitude,
+                $school->longitude,
+                $request->latitude,
+                $request->longitude
+            );
 
-        if ($distance > $school->radius) {
-            return response()->json([
-                'status'=>false,
-                'message'=>'Kamu di luar area sekolah'
-            ],403);
+            if ($distance > $school->radius) {
+                return response()->json([
+                    'status'=>false,
+                    'message'=>'Di luar area sekolah'
+                ],403);
+            }
         }
 
-        
-        $jamTerlambat = Carbon::createFromTime(8, 15, 0);
+        $jamTerlambat = Carbon::createFromTime(8,15);
         $status = $now->lte($jamTerlambat) ? 'hadir' : 'terlambat';
 
-        // foto
         $path = $request->hasFile('foto')
             ? $request->file('foto')->store('absensi','public')
             : null;
 
         $attendance = Attendance::create([
+            'user_id'    => $user->id,
+            'role'       => 'siswa',
+            'tanggal'    => $today,
+            'jam_masuk'  => $now,
+            'subject_id' => $request->subject_id,
+            'kelas_id'   => $user->profile->kelas_id,
+            'latitude'   => $request->latitude,
+            'longitude'  => $request->longitude,
+            'foto'       => $path,
+            'status'     => $status
+        ]);
+
+        $attendance->load('subject');
+
+        return response()->json([
+            'status'=>true,
+            'message'=>'Presensi berhasil',
+            'data'=>[
+                'nama'   => $user->profile->nama_lengkap,
+                'kelas'  => $user->profile->kelas_id,
+                'mapel'  => $attendance->subject->nama_mapel ?? '-',
+                'jam'    => $attendance->jam_masuk->format('H:i'),
+                'status' => $attendance->status,
+                'foto'   => $attendance->foto,
+                'lat'    => $attendance->latitude,
+                'lng'    => $attendance->longitude
+            ]
+        ]);
+    }
+
+    /* =========================
+     * GURU - MASUK SEKOLAH
+     * ========================= */
+    public function teacherCheckIn(Request $request)
+    {
+        $request->validate([
+            'latitude'  => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
+        $user = $request->user();
+
+        if ($user->role !== 'guru') {
+            return response()->json(['status'=>false,'message'=>'Unauthorized'],403);
+        }
+
+        // CEK PROFILE GURU
+        if (!$user->profile) {
+            return response()->json([
+                'status'=>false,
+                'message'=>'Data profil guru tidak lengkap'
+            ],422);
+        }
+
+        $today = Carbon::today()->toDateString();
+
+        // CEK SUDAH PRESENSI HARI INI
+        if (Attendance::where('user_id',$user->id)->where('tanggal',$today)->first()) {
+            return response()->json([
+                'status'=>false,
+                'message'=>'Sudah presensi hari ini'
+            ],409);
+        }
+
+        // VALIDASI LOKASI (OPTIONAL)
+        $school = School::first();
+        if ($school) {
+            $distance = $this->distance(
+                $school->latitude,
+                $school->longitude,
+                $request->latitude,
+                $request->longitude
+            );
+
+            if ($distance > $school->radius) {
+                return response()->json([
+                    'status'=>false,
+                    'message'=>'Di luar area sekolah'
+                ],403);
+            }
+        }
+
+        $jamTerlambat = Carbon::createFromTime(8,15);
+        $status = now()->lte($jamTerlambat) ? 'hadir' : 'terlambat';
+
+        $attendance = Attendance::create([
             'user_id'   => $user->id,
+            'role'      => 'guru',
             'tanggal'   => $today,
-            'jam_masuk' => $now,
+            'jam_masuk' => now(),
             'latitude'  => $request->latitude,
             'longitude' => $request->longitude,
-            'foto'      => $path,
-            'status'    => $status,
+            'status'    => $status
         ]);
 
         return response()->json([
             'status'=>true,
-            'message'=>'Check-in berhasil',
+            'message'=>'Presensi masuk berhasil',
             'data'=>$attendance
         ]);
     }
 
-    public function checkOut(Request $request)
+    /* =========================
+     * GURU - PULANG
+     * ========================= */
+    public function teacherCheckOut(Request $request)
     {
         $attendance = Attendance::where('user_id',$request->user()->id)
             ->where('tanggal',Carbon::today()->toDateString())
             ->first();
 
-        if (!$attendance) {
-            return response()->json(['status'=>false,'message'=>'Belum check-in'],404);
-        }
-
-        if ($attendance->jam_pulang) {
-            return response()->json(['status'=>false,'message'=>'Sudah check-out'],409);
-        }
-
-        $now = now();
-
-       
-        $jamMulaiPulang = Carbon::createFromTime(5, 0, 0);
-        $jamAkhirPulang = Carbon::createFromTime(18, 0, 0);
-
-        if ($now->lt($jamMulaiPulang) || $now->gt($jamAkhirPulang)) {
+        if (!$attendance || $attendance->jam_pulang) {
             return response()->json([
                 'status'=>false,
-                'message'=>'Check-out hanya bisa jam 15:00 - 18:00'
-            ],403);
+                'message'=>'Belum check-in / sudah pulang'
+            ],409);
         }
 
-        $status = $now->lt($jamMulaiPulang)
-            ? 'pulang_dini'
-            : 'pulang';
-
         $attendance->update([
-            'jam_pulang' => $now,
-            'status'     => $status,
+            'jam_pulang'=>now(),
+            'status'=>'pulang'
         ]);
 
         return response()->json([
             'status'=>true,
-            'message'=>'Check-out berhasil',
-            'data'=>$attendance
+            'message'=>'Presensi pulang berhasil'
         ]);
     }
 
-    public function history(Request $request)
+    /* =========================
+     * GURU - SISWA BELUM ABSEN
+     * ========================= */
+    public function missingStudents(Request $request, $subjectId)
     {
-        $data = Attendance::where('user_id', $request->user()->id)
-            ->orderByDesc('tanggal')
+        $user = $request->user();
+
+        if ($user->role !== 'guru') {
+            return response()->json(['status'=>false,'message'=>'Unauthorized'],403);
+        }
+
+        // CEK GURU MENGAJAR MAPEL INI
+        $subject = Subject::find($subjectId);
+        if (!$subject || !$subject->teachers->contains($user->id)) {
+            return response()->json([
+                'status'=>false,
+                'message'=>'Anda tidak mengajar mapel ini'
+            ],403);
+        }
+
+        $today = Carbon::today()->toDateString();
+
+        $missingStudents = User::where('role','siswa')
+            ->whereHas('profile', fn($q)=>$q->where('kelas_id',$subject->kelas_id))
+            ->whereDoesntHave('attendances', fn($q)=>$q
+                ->where('tanggal',$today)
+                ->where('subject_id',$subjectId)
+            )
+            ->with('profile')
             ->get()
-            ->map(function ($item) {
-                return [
-                    'date'     => Carbon::parse($item->tanggal)->format('Y-m-d'),
-                    'time_in'  => optional($item->jam_masuk)->format('H:i:s'),
-                    'time_out' => optional($item->jam_pulang)->format('H:i:s'),
-                    'status'   => ucfirst($item->status),
-                ];
-            });
+            ->map(fn($s)=>[
+                'id'   => $s->id,
+                'nama' => $s->profile->nama_lengkap,
+                'nis'  => $s->profile->nip_nis
+            ]);
+
+        $totalStudents = User::where('role','siswa')
+            ->whereHas('profile', fn($q)=>$q->where('kelas_id',$subject->kelas_id))
+            ->count();
 
         return response()->json([
-            'status' => true,
-            'data'   => $data,
+            'status'=>true,
+            'subject' => $subject->nama_mapel,
+            'kelas_id' => $subject->kelas_id,
+            'summary' => [
+                'total' => $totalStudents,
+                'hadir' => $totalStudents - $missingStudents->count(),
+                'belum_absen' => $missingStudents->count()
+            ],
+            'missing_students' => $missingStudents
         ]);
     }
 
-   
+    /* =========================
+     * GURU - LIHAT ABSENSI SISWA PER MAPEL
+     * ========================= */
+    public function studentAttendanceBySubject(Request $request, $subjectId)
+    {
+        $user = $request->user();
+
+        if ($user->role !== 'guru') {
+            return response()->json(['status'=>false,'message'=>'Unauthorized'],403);
+        }
+
+        // CEK GURU MENGAJAR MAPEL INI
+        $subject = Subject::find($subjectId);
+        if (!$subject || !$subject->teachers->contains($user->id)) {
+            return response()->json([
+                'status'=>false,
+                'message'=>'Anda tidak mengajar mapel ini'
+            ],403);
+        }
+
+        $today = Carbon::today()->toDateString();
+
+        $attendances = Attendance::where('subject_id', $subjectId)
+            ->where('tanggal', $today)
+            ->where('role', 'siswa')
+            ->with(['user.profile'])
+            ->get()
+            ->map(fn($a)=>[
+                'id' => $a->user->id,
+                'nama' => $a->user->profile->nama_lengkap,
+                'nis' => $a->user->profile->nip_nis,
+                'jam_masuk' => $a->jam_masuk->format('H:i'),
+                'status' => $a->status,
+                'foto' => $a->foto,
+                'latitude' => $a->latitude,
+                'longitude' => $a->longitude
+            ]);
+
+        return response()->json([
+            'status'=>true,
+            'subject' => $subject->nama_mapel,
+            'tanggal' => $today,
+            'total_absen' => $attendances->count(),
+            'summary' => [
+                'hadir' => $attendances->where('status','hadir')->count(),
+                'terlambat' => $attendances->where('status','terlambat')->count()
+            ],
+            'data' => $attendances
+        ]);
+    }
+
+    /* =========================
+     * GURU - REPORT ABSENSI (RANGE TANGGAL)
+     * ========================= */
+    public function attendanceReport(Request $request, $subjectId)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date'   => 'required|date|after_or_equal:start_date'
+        ]);
+
+        $user = $request->user();
+
+        if ($user->role !== 'guru') {
+            return response()->json(['status'=>false,'message'=>'Unauthorized'],403);
+        }
+
+        // CEK GURU MENGAJAR MAPEL INI
+        $subject = Subject::find($subjectId);
+        if (!$subject || !$subject->teachers->contains($user->id)) {
+            return response()->json([
+                'status'=>false,
+                'message'=>'Anda tidak mengajar mapel ini'
+            ],403);
+        }
+
+        $startDate = Carbon::parse($request->start_date)->toDateString();
+        $endDate = Carbon::parse($request->end_date)->toDateString();
+
+        // AMBIL SEMUA SISWA DI KELAS INI
+        $students = User::where('role','siswa')
+            ->whereHas('profile', fn($q)=>$q->where('kelas_id',$subject->kelas_id))
+            ->with(['profile'])
+            ->get();
+
+        // GROUPING ABSENSI PER SISWA
+        $report = $students->map(fn($student) => [
+            'id' => $student->id,
+            'nama' => $student->profile->nama_lengkap,
+            'nis' => $student->profile->nip_nis,
+            'attendance' => Attendance::where('user_id', $student->id)
+                ->where('subject_id', $subjectId)
+                ->whereBetween('tanggal', [$startDate, $endDate])
+                ->orderBy('tanggal')
+                ->get()
+                ->map(fn($a) => [
+                    'tanggal' => $a->tanggal->format('Y-m-d'),
+                    'jam_masuk' => $a->jam_masuk?->format('H:i'),
+                    'status' => $a->status,
+                ])
+        ]);
+
+        // STATISTIK KESELURUHAN
+        $totalDays = Attendance::where('subject_id', $subjectId)
+            ->whereBetween('tanggal', [$startDate, $endDate])
+            ->distinct('tanggal')
+            ->count('tanggal');
+
+        return response()->json([
+            'status'=>true,
+            'subject' => $subject->nama_mapel,
+            'periode' => [
+                'start' => $startDate,
+                'end' => $endDate
+            ],
+            'total_hari' => $totalDays,
+            'total_siswa' => $students->count(),
+            'statistik' => [
+                'hadir' => Attendance::where('subject_id', $subjectId)
+                    ->whereBetween('tanggal', [$startDate, $endDate])
+                    ->where('status', 'hadir')
+                    ->count(),
+                'terlambat' => Attendance::where('subject_id', $subjectId)
+                    ->whereBetween('tanggal', [$startDate, $endDate])
+                    ->where('status', 'terlambat')
+                    ->count(),
+                'belum_absen' => ($students->count() * $totalDays) - (
+                    Attendance::where('subject_id', $subjectId)
+                    ->whereBetween('tanggal', [$startDate, $endDate])
+                    ->count()
+                )
+            ],
+            'report' => $report
+        ]);
+    }
+  public function today(Request $request)
+{
+    $user = $request->user();
+    $today = Carbon::today()->toDateString();
+
+    $attendance = Attendance::where('user_id', $user->id)
+        ->where('tanggal', $today)
+        ->latest('jam_masuk') 
+        ->first();
+
+    if (!$attendance) return response()->json([]);
+
+    return response()->json([
+        'check_in_time' => $attendance->jam_masuk?->format('H:i') ?? null,
+        'is_late'       => $attendance->status === 'terlambat',
+        'late_minutes'  => $attendance->status === 'terlambat'
+                            ? Carbon::parse('08:15')->diffInMinutes($attendance->jam_masuk)
+                            : 0,
+        'subject'       => $attendance->subject->nama_mapel ?? null,
+    ]);
+}
+
+
+    /* =========================
+     * DISTANCE (meter)
+     * ========================= */
     private function distance($lat1,$lon1,$lat2,$lon2)
     {
         $theta = $lon1 - $lon2;
         $dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2))
               + cos(deg2rad($lat1)) * cos(deg2rad($lat2))
               * cos(deg2rad($theta));
-        $dist = acos($dist);
-        $dist = rad2deg($dist);
-        return $dist * 60 * 1.1515 * 1609.344;
+        return acos($dist) * 60 * 1.1515 * 1609.344;
     }
 }

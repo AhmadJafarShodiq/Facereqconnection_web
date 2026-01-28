@@ -31,11 +31,21 @@ class User extends Authenticatable
     {
         return $this->hasMany(Attendance::class);
     }
+
     public function faceData()
-{
-    return $this->hasOne(FaceData::class);
-}
+    {
+        return $this->hasOne(FaceData::class);
+    }
 
+    // RELASI GURU - MAPEL YANG DIAJARKAN
+    public function subjects()
+    {
+        return $this->belongsToMany(Subject::class, 'teacher_subjects', 'user_id', 'subject_id');
+    }
 
-
+    // RELASI GURU - JADWAL MENGAJAR
+    public function schedules()
+    {
+        return $this->hasMany(Schedule::class);
+    }
 }
