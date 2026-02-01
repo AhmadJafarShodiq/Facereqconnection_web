@@ -91,57 +91,40 @@ class ScheduleController extends Controller
     /**
      * GET JADWAL PER HARI (untuk Flutter show real-time)
      */
-    public function todaySchedule(Request $request)
-    {
-        $user = $request->user();
-        $today = now()->format('l'); // Senin, Selasa, dst
-        $hariMapping = [
-            'Monday' => 'Senin',
-            'Tuesday' => 'Selasa',
-            'Wednesday' => 'Rabu',
-            'Thursday' => 'Kamis',
-            'Friday' => 'Jumat',
-            'Saturday' => 'Sabtu',
-            'Sunday' => 'Minggu',
-        ];
-        $hari = $hariMapping[$today] ?? 'Senin';
+public function todaySchedule(Request $request)
+{
+    $user = $request->user();
 
-        if ($user->role === 'siswa') {
-            $schedules = Schedule::where('kelas_id', $user->profile->kelas_id)
-                ->where('hari', $hari)
-                ->with(['guru.profile', 'subject'])
-                ->orderBy('jam_mulai')
-                ->get()
-                ->map(fn($s) => [
-                    'id' => $s->id,
-                    'mapel' => $s->subject->nama_mapel,
-                    'guru' => $s->guru->profile->nama_lengkap,
-                    'jam_mulai' => $s->jam_mulai,
-                    'jam_selesai' => $s->jam_selesai,
-                    'ruangan' => $s->ruangan,
-                ]);
-        } else if ($user->role === 'guru') {
-            $schedules = Schedule::where('user_id', $user->id)
-                ->where('hari', $hari)
-                ->with(['subject', 'kelas'])
-                ->orderBy('jam_mulai')
-                ->get()
-                ->map(fn($s) => [
-                    'id' => $s->id,
-                    'mapel' => $s->subject->nama_mapel,
-                    'kelas' => $s->kelas->nama_kelas ?? '-',
-                    'jam_mulai' => $s->jam_mulai,
-                    'jam_selesai' => $s->jam_selesai,
-                    'ruangan' => $s->ruangan,
-                ]);
-        } else {
-            $schedules = [];
-        }
+    $hariMap = [
+        'Monday'    => 'Senin',
+        'Tuesday'   => 'Selasa',
+        'Wednesday' => 'Rabu',
+        'Thursday'  => 'Kamis',
+        'Friday'    => 'Jumat',
+        'Saturday'  => 'Sabtu',
+        'Sunday'    => 'Minggu',
+    ];
 
-        return response()->json([
-            'status' => true,
-            'hari' => $hari,
-            'data' => $schedules
-        ]);
+    $hariIni = $hariMap[now()->format('l')];
+
+    $query = Schedule::with('subject')
+        ->where('hari', $hariIni);
+
+    // SISWA → filter kelas
+    if ($user->role === 'siswa') {
+        $query->where('kelas_id', $user->profile->kelas_id);
     }
+
+    // GURU → filter user_id
+    if ($user->role === 'guru') {
+        $query->where('user_id', $user->id);
+    }
+
+    return response()->json([
+        'status' => true,
+        'hari'   => $hariIni,
+        'data'   => $query->get(),
+    ]);
+}
+
 }

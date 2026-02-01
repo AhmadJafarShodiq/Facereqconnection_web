@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
 use App\Models\Subject;
+use App\Models\Kelas;
 
 class Attendance extends Model
 {
@@ -20,10 +21,13 @@ class Attendance extends Model
         'longitude',
         'foto',
         'status',
+        'attendance_session_id',
     ];
 
     protected $casts = [
-        'tanggal' => 'date',
+        'tanggal'    => 'date',
+        'jam_masuk'  => 'datetime',
+        'jam_pulang' => 'datetime',
     ];
 
     public function user()
@@ -36,9 +40,14 @@ class Attendance extends Model
         return $this->belongsTo(Subject::class);
     }
 
-    // RELASI KELAS
     public function kelas()
     {
         return $this->belongsTo(Kelas::class, 'kelas_id');
     }
+
+    public function session()
+{
+    return $this->belongsTo(AttendanceSession::class, 'attendance_session_id');
+}
+
 }

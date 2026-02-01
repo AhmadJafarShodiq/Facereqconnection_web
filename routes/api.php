@@ -9,15 +9,7 @@ use App\Http\Controllers\Api\FaceController;
 use App\Http\Controllers\Api\SubjectController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ScheduleController;
-
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-| prefix otomatis: /api
-|--------------------------------------------------------------------------
-*/
-
+use App\Http\Controllers\Api\GuruAttendanceSessionController;
 /* =========================
 | AUTH
 | ========================= */
@@ -53,6 +45,7 @@ Route::middleware(['auth:sanctum','face.verified'])->group(function () {
 
     /* ===== DASHBOARD ===== */
     Route::get('/dashboard', [DashboardController::class, 'index']);
+    Route::get('/guru/dashboard/today',[DashboardController::class, 'guruToday']);
 
     /* ===== SUBJECT / MAPEL ===== */
     Route::get('/subjects', [SubjectController::class, 'index']);
@@ -62,11 +55,23 @@ Route::middleware(['auth:sanctum','face.verified'])->group(function () {
     Route::get('/schedules/teacher', [ScheduleController::class, 'teacherSchedule']);
     Route::get('/schedules/today', [ScheduleController::class, 'todaySchedule']);
 
+    Route::post(
+    '/guru/attendance/open',
+    [GuruAttendanceSessionController::class, 'open']
+);
+
+    Route::post(
+    '/guru/attendance/{id}/close',
+    [GuruAttendanceSessionController::class, 'close']
+);
+
+    
     /* ===== SISWA PRESENSI ===== */
     Route::post(
         '/attendance/student',
         [AttendanceController::class,'studentCheckIn']
     );
+    Route::middleware('auth:sanctum')->get('/attendance/history', [AttendanceController::class, 'studentHistory']);
 
     /* ===== GURU PRESENSI ===== */
     Route::post(

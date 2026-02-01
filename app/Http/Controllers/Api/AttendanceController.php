@@ -9,6 +9,7 @@ use App\Models\School;
 use App\Models\Subject;
 use App\Models\User;
 use Carbon\Carbon;
+use App\Models\AttendanceSession;
 
 class AttendanceController extends Controller
 {
@@ -87,7 +88,23 @@ class AttendanceController extends Controller
             ? $request->file('foto')->store('absensi','public')
             : null;
 
-        $attendance = Attendance::create([
+        
+$session = AttendanceSession::where([
+    'subject_id' => $request->subject_id,
+    'kelas_id'   => $user->profile->kelas_id,
+    'is_active'  => true
+])->latest('started_at')->first();
+
+if (!$session) {
+    return response()->json([
+        'status'=>false,
+        'message'=>'Absen belum dibuka oleh guru'
+    ], 403);
+}
+    
+    
+    
+            $attendance = Attendance::create([
             'user_id'    => $user->id,
             'role'       => 'siswa',
             'tanggal'    => $today,
@@ -97,7 +114,9 @@ class AttendanceController extends Controller
             'latitude'   => $request->latitude,
             'longitude'  => $request->longitude,
             'foto'       => $path,
-            'status'     => $status
+            'status'     => $status,
+            'attendance_session_id' => $session->id,
+
         ]);
 
         $attendance->load('subject');
@@ -217,109 +236,71 @@ class AttendanceController extends Controller
         ]);
     }
 
-    /* =========================
-     * GURU - SISWA BELUM ABSEN
-     * ========================= */
-    public function missingStudents(Request $request, $subjectId)
-    {
-        $user = $request->user();
-
-        if ($user->role !== 'guru') {
-            return response()->json(['status'=>false,'message'=>'Unauthorized'],403);
-        }
-
-        // CEK GURU MENGAJAR MAPEL INI
-        $subject = Subject::find($subjectId);
-        if (!$subject || !$subject->teachers->contains($user->id)) {
-            return response()->json([
-                'status'=>false,
-                'message'=>'Anda tidak mengajar mapel ini'
-            ],403);
-        }
-
-        $today = Carbon::today()->toDateString();
-
-        $missingStudents = User::where('role','siswa')
-            ->whereHas('profile', fn($q)=>$q->where('kelas_id',$subject->kelas_id))
-            ->whereDoesntHave('attendances', fn($q)=>$q
-                ->where('tanggal',$today)
-                ->where('subject_id',$subjectId)
-            )
-            ->with('profile')
-            ->get()
-            ->map(fn($s)=>[
-                'id'   => $s->id,
-                'nama' => $s->profile->nama_lengkap,
-                'nis'  => $s->profile->nip_nis
-            ]);
-
-        $totalStudents = User::where('role','siswa')
-            ->whereHas('profile', fn($q)=>$q->where('kelas_id',$subject->kelas_id))
-            ->count();
-
-        return response()->json([
-            'status'=>true,
-            'subject' => $subject->nama_mapel,
-            'kelas_id' => $subject->kelas_id,
-            'summary' => [
-                'total' => $totalStudents,
-                'hadir' => $totalStudents - $missingStudents->count(),
-                'belum_absen' => $missingStudents->count()
-            ],
-            'missing_students' => $missingStudents
-        ]);
+// =========================
+// GURU - SISWA BELUM ABSEN
+// =========================
+public function missingStudents(Request $request, $subjectId)
+{
+    $user = $request->user();
+    if ($user->role !== 'guru') {
+        return response()->json(['status' => false], 403);
     }
 
-    /* =========================
-     * GURU - LIHAT ABSENSI SISWA PER MAPEL
-     * ========================= */
-    public function studentAttendanceBySubject(Request $request, $subjectId)
-    {
-        $user = $request->user();
+    $today   = now()->toDateString();
+    $kelasId = $user->profile->kelas_id;
 
-        if ($user->role !== 'guru') {
-            return response()->json(['status'=>false,'message'=>'Unauthorized'],403);
-        }
+    $students = User::where('role', 'siswa')
+        ->whereHas('profile', fn($q) => $q->where('kelas_id', $kelasId))
+        ->with('profile')
+        ->get();
 
-        // CEK GURU MENGAJAR MAPEL INI
-        $subject = Subject::find($subjectId);
-        if (!$subject || !$subject->teachers->contains($user->id)) {
-            return response()->json([
-                'status'=>false,
-                'message'=>'Anda tidak mengajar mapel ini'
-            ],403);
-        }
+    $presentIds = Attendance::where('tanggal', $today)
+        ->where('subject_id', $subjectId)
+        ->pluck('user_id')
+        ->toArray();
 
-        $today = Carbon::today()->toDateString();
+    $missing = $students
+        ->whereNotIn('id', $presentIds)
+        ->map(fn($s) => [
+            'id'   => $s->id,
+            'nama' => $s->profile->nama_lengkap,
+            'nis'  => $s->profile->nip_nis,
+        ])
+        ->values();
 
-        $attendances = Attendance::where('subject_id', $subjectId)
-            ->where('tanggal', $today)
-            ->where('role', 'siswa')
-            ->with(['user.profile'])
-            ->get()
-            ->map(fn($a)=>[
-                'id' => $a->user->id,
-                'nama' => $a->user->profile->nama_lengkap,
-                'nis' => $a->user->profile->nip_nis,
-                'jam_masuk' => $a->jam_masuk->format('H:i'),
-                'status' => $a->status,
-                'foto' => $a->foto,
-                'latitude' => $a->latitude,
-                'longitude' => $a->longitude
-            ]);
+    return response()->json([
+        'status' => true,
+        'data'   => $missing
+    ]);
+}
 
-        return response()->json([
-            'status'=>true,
-            'subject' => $subject->nama_mapel,
-            'tanggal' => $today,
-            'total_absen' => $attendances->count(),
-            'summary' => [
-                'hadir' => $attendances->where('status','hadir')->count(),
-                'terlambat' => $attendances->where('status','terlambat')->count()
-            ],
-            'data' => $attendances
-        ]);
+// =========================
+// GURU - SISWA SUDAH ABSEN
+// =========================
+public function studentAttendanceBySubject(Request $request, $subjectId)
+{
+    $user = $request->user();
+    if ($user->role !== 'guru') {
+        return response()->json(['status' => false], 403);
     }
+
+    $today = now()->toDateString();
+
+    $data = Attendance::where('tanggal', $today)
+        ->where('subject_id', $subjectId)
+        ->with('user.profile')
+        ->get()
+        ->map(fn($a) => [
+            'id'   => $a->user->id,
+            'nama' => $a->user->profile->nama_lengkap,
+            'nis'  => $a->user->profile->nip_nis,
+        ]);
+
+    return response()->json([
+        'status' => true,
+        'data'   => $data
+    ]);
+}
 
     /* =========================
      * GURU - REPORT ABSENSI (RANGE TANGGAL)
@@ -355,22 +336,28 @@ class AttendanceController extends Controller
             ->with(['profile'])
             ->get();
 
+            $allAttendance = Attendance::where('subject_id', $subjectId)
+    ->whereBetween('tanggal', [$startDate, $endDate])
+    ->orderBy('tanggal')
+    ->get()
+    ->groupBy('user_id');
+
         // GROUPING ABSENSI PER SISWA
-        $report = $students->map(fn($student) => [
-            'id' => $student->id,
-            'nama' => $student->profile->nama_lengkap,
-            'nis' => $student->profile->nip_nis,
-            'attendance' => Attendance::where('user_id', $student->id)
-                ->where('subject_id', $subjectId)
-                ->whereBetween('tanggal', [$startDate, $endDate])
-                ->orderBy('tanggal')
-                ->get()
-                ->map(fn($a) => [
-                    'tanggal' => $a->tanggal->format('Y-m-d'),
-                    'jam_masuk' => $a->jam_masuk?->format('H:i'),
-                    'status' => $a->status,
-                ])
-        ]);
+     $report = $students->map(function ($student) use ($allAttendance) {
+
+    $records = $allAttendance[$student->id] ?? collect();
+
+    return [
+        'id'   => $student->id,
+        'nama' => $student->profile->nama_lengkap,
+        'nis'  => $student->profile->nip_nis,
+        'attendance' => $records->map(fn($a) => [
+            'tanggal'   => $a->tanggal->format('Y-m-d'),
+            'jam_masuk' => $a->jam_masuk?->format('H:i'),
+            'status'    => $a->status,
+        ])->values()
+    ];
+});
 
         // STATISTIK KESELURUHAN
         $totalDays = Attendance::where('subject_id', $subjectId)
@@ -411,20 +398,25 @@ class AttendanceController extends Controller
     $today = Carbon::today()->toDateString();
 
     $attendance = Attendance::where('user_id', $user->id)
-        ->where('tanggal', $today)
-        ->latest('jam_masuk') 
-        ->first();
+    ->where('tanggal', $today)
+    ->with('subject')
+    ->latest('jam_masuk')
+    ->first();
 
     if (!$attendance) return response()->json([]);
 
-    return response()->json([
-        'check_in_time' => $attendance->jam_masuk?->format('H:i') ?? null,
+   return response()->json([
+    'status' => true,
+    'data' => [
+        'check_in_time' => $attendance->jam_masuk?->format('H:i'),
         'is_late'       => $attendance->status === 'terlambat',
-        'late_minutes'  => $attendance->status === 'terlambat'
-                            ? Carbon::parse('08:15')->diffInMinutes($attendance->jam_masuk)
-                            : 0,
-        'subject'       => $attendance->subject->nama_mapel ?? null,
-    ]);
+       'late_minutes' => $attendance->status === 'terlambat' && $attendance->jam_masuk
+    ? Carbon::parse('08:15')->diffInMinutes($attendance->jam_masuk)
+    : 0,
+
+        'subject'       => $attendance->subject?->nama_mapel,
+    ]
+]);
 }
 
 
@@ -439,4 +431,30 @@ class AttendanceController extends Controller
               * cos(deg2rad($theta));
         return acos($dist) * 60 * 1.1515 * 1609.344;
     }
+
+  public function studentHistory(Request $request)
+{
+    $user = $request->user();
+    $history = Attendance::where('user_id', $user->id)
+        ->orderBy('tanggal', 'desc')
+        ->with('subject')
+        ->get()
+        ->map(function($a){
+    return [
+        'tanggal'  => $a->tanggal->format('Y-m-d'),
+        'jam'      => $a->jam_masuk?->format('H:i'),
+        'time_out' => $a->jam_pulang?->format('H:i'),
+        'status'   => $a->status,
+        'subject'  => $a->subject?->nama_mapel ?? '-',
+    ];
+});
+
+
+    return response()->json([
+        'status' => true,
+        'data'   => $history
+    ]);
+}
+
+
 }

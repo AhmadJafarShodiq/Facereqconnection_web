@@ -10,7 +10,7 @@ class SubjectController extends Controller
 {
     public function index(Request $request)
     {
-        $user = $request->user(); // ← dari Sanctum
+        $user = $request->user();
 
         // ================= SISWA =================
         if ($user->role === 'siswa') {
@@ -32,18 +32,11 @@ class SubjectController extends Controller
             ]);
         }
 
-        // ================= GURU & ADMIN =================
-        if (in_array($user->role, ['guru', 'admin'])) {
+        // ================= GURU =================
+        if ($user->role === 'guru') {
 
-            if (!$user->profile || !$user->profile->kelas_id) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Kelas guru belum ditentukan'
-                ], 422);
-            }
-
-            $subjects = Subject::where('kelas_id', $user->profile->kelas_id)
-                ->select('id', 'nama_mapel', 'kelas_id')
+            $subjects = $user->subjects()
+                ->select('subjects.id', 'subjects.nama_mapel', 'subjects.kelas_id')
                 ->get();
 
             return response()->json([
@@ -52,7 +45,6 @@ class SubjectController extends Controller
             ]);
         }
 
-        // ================= ROLE LAIN =================
         return response()->json([
             'status' => false,
             'message' => 'Role tidak diizinkan'
