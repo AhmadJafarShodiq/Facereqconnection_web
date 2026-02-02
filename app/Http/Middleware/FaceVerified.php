@@ -9,10 +9,28 @@ class FaceVerified
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!$request->user()?->face_verified_at) {
+        $user = $request->user();
+
+        if (!$user) {
             return response()->json([
                 'status' => false,
-                'message' => 'Verifikasi wajah dulu'
+                'message' => 'Unauthenticated'
+            ], 401);
+        }
+
+        if (!$user->face_embedding) {
+            return response()->json([
+                'status' => false,
+                'code' => 'FACE_NOT_REGISTERED',
+                'message' => 'Wajah belum diregistrasi'
+            ], 403);
+        }
+
+        if (!$user->face_verified) {
+            return response()->json([
+                'status' => false,
+                'code' => 'FACE_NOT_VERIFIED',
+                'message' => 'Wajah belum diverifikasi'
             ], 403);
         }
 
