@@ -112,7 +112,6 @@ class ScheduleController extends Controller
         if ($user->role === 'guru') {
             $query->where('user_id', $user->id);
         }
-
         $schedules = $query->orderBy('jam_mulai')->get()->map(function ($s) use ($user) {
             $item = [
                 'id' => $s->id,

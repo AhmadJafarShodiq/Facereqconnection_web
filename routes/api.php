@@ -34,8 +34,8 @@ Route::middleware('auth:sanctum')->get('/me', function (Request $request) {
 ================================================= */
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/face/register', [FaceController::class, 'register']);
-    Route::post('/face/verify',   [FaceController::class, 'verify']);
-    Route::get('/face/status',    [FaceController::class, 'status']);
+    Route::post('/face/verify', [FaceController::class, 'verify']);
+    Route::get('/face/status', [FaceController::class, 'status']);
 });
 
 
@@ -67,16 +67,16 @@ Route::middleware(['auth:sanctum', 'face.verified'])->group(function () {
     | SISWA
     ================================================= */
     Route::post('/attendance/student', [AttendanceController::class, 'studentCheckIn']);
-    Route::get('/attendance/history',  [AttendanceController::class, 'studentHistory']);
-    Route::get('/attendance/today',    [AttendanceController::class, 'today']);
+    Route::get('/attendance/history', [AttendanceController::class, 'studentHistory']);
+    Route::get('/attendance/today', [AttendanceController::class, 'today']);
 
     /* =================================================
     | GURU
     ================================================= */
-    Route::post('/attendance/teacher/check-in',  [AttendanceController::class, 'teacherCheckIn']);
+    Route::post('/attendance/teacher/check-in', [AttendanceController::class, 'teacherCheckIn']);
     Route::post('/attendance/teacher/check-out', [AttendanceController::class, 'teacherCheckOut']);
 
-    Route::get('/attendance/subject/{subjectId}/missing', [AttendanceController::class, 'missingStudents']);
-    Route::get('/attendance/subject/{subjectId}/today',   [AttendanceController::class, 'studentAttendanceBySubject']);
-    Route::get('/attendance/subject/{subjectId}/report',  [AttendanceController::class, 'attendanceReport']);
+    Route::get('/attendance/subject/{subjectId}/{classId}/missing', [AttendanceController::class, 'missingStudents']);
+    Route::get('/attendance/subject/{subjectId}/{classId}/today', [AttendanceController::class, 'studentAttendanceBySubject']);
+    Route::get('/attendance/subject/{subjectId}/{classId}/report', [AttendanceController::class, 'attendanceReport']);
 });
