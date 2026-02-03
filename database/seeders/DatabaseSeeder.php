@@ -41,6 +41,12 @@ class DatabaseSeeder extends Seeder
         // =====================
         // 3. BUAT GURU
         // =====================
+        $admin = User::create([
+            'username' => 'admin',
+            'password' => Hash::make('password123'),
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
         $guru1 = User::create([
             'username' => 'budi_guru',
             'password' => Hash::make('password123'),
