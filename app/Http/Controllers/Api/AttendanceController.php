@@ -233,7 +233,6 @@ class AttendanceController extends Controller
             return response()->json(['status' => false], 403);
 
         $today = now()->toDateString();
-
         $subject = Subject::with('kelas.students')->findOrFail($subjectId);
 
         $absenUserIds = Attendance::where('subject_id', $subjectId)

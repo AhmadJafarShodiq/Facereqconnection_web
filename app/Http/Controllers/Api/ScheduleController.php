@@ -24,7 +24,6 @@ class ScheduleController extends Controller
                 'message' => 'Unauthorized'
             ], 403);
         }
-
         if (!$user->profile || !$user->profile->kelas_id) {
             return response()->json([
                 'status' => false,
