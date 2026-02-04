@@ -7,7 +7,7 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\FaceDataController;
 use App\Http\Controllers\Admin\AttendanceController;
 
-Route::get('/', fn () => redirect('/admin/login'));
+Route::get('/', fn() => redirect('/admin/login'));
 
 // AUTH
 Route::get('/admin/login', [AuthController::class, 'showLogin'])->name('admin.login');
@@ -26,12 +26,12 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::resource('profiles', ProfileController::class);
 
     // Face Data
-    Route::get('face-data', [FaceDataController::class,'index'])->name('face-data.index');
-    Route::post('face-data/{user}/reset', [FaceDataController::class,'reset'])->name('face-data.reset');
+    Route::get('face-data', [FaceDataController::class, 'index'])->name('face-data.index');
+    Route::post('face-data/{user}/reset', [FaceDataController::class, 'reset'])->name('face-data.reset');
 
     // Attendance
-    Route::get('attendance', [AttendanceController::class,'index'])->name('attendance.index');
-    Route::get('attendance/{attendance}', [AttendanceController::class,'show'])->name('attendance.show');
-    Route::get('attendance/export', [AttendanceController::class,'export'])->name('attendance.export');
+    Route::get('attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+    Route::get('attendance/{attendance}', [AttendanceController::class, 'show'])->name('attendance.show');
+    Route::get('attendance/pdf/export', [AttendanceController::class, 'export'])->name('attendance.export');
 
 });

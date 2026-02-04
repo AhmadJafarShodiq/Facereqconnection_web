@@ -14,13 +14,15 @@ class AttendanceController extends Controller
     {
         $query = Attendance::with('user.profile')->orderByDesc('tanggal');
 
-        if($request->user_id) $query->where('user_id', $request->user_id);
-        if($request->tanggal) $query->whereDate('tanggal', $request->tanggal);
+        if ($request->user_id)
+            $query->where('user_id', $request->user_id);
+        if ($request->tanggal)
+            $query->whereDate('tanggal', $request->tanggal);
 
         $attendances = $query->get();
         $users = User::all();
 
-        return view('admin.attendance.index', compact('attendances','users'));
+        return view('admin.attendance.index', compact('attendances', 'users'));
     }
 
     public function show(Attendance $attendance)
@@ -32,12 +34,14 @@ class AttendanceController extends Controller
     {
         $query = Attendance::with('user.profile')->orderByDesc('tanggal');
 
-        if($request->user_id) $query->where('user_id', $request->user_id);
-        if($request->tanggal) $query->whereDate('tanggal', $request->tanggal);
+        if ($request->user_id)
+            $query->where('user_id', $request->user_id);
+        if ($request->tanggal)
+            $query->whereDate('tanggal', $request->tanggal);
 
         $attendances = $query->get();
 
         $pdf = Pdf::loadView('admin.attendance.export', compact('attendances'));
-        return $pdf->download('attendance_'.now()->format('Y-m-d').'.pdf');
+        return $pdf->download('attendance_' . now()->format('Y-m-d') . '.pdf');
     }
 }
