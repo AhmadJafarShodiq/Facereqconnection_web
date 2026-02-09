@@ -5,15 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Schedule;
-use App\Models\User;
 use App\Models\AttendanceSession;
+use App\Models\Attendance;
 use Carbon\Carbon;
 
 class ScheduleController extends Controller
 {
-    /**
-     * GET JADWAL SISWA (berdasarkan kelas siswa)
-     */
+    /* =====================================================
+    | GET JADWAL SISWA
+    ===================================================== */
     public function studentSchedule(Request $request)
     {
         $user = $request->user();
@@ -24,6 +24,7 @@ class ScheduleController extends Controller
                 'message' => 'Unauthorized'
             ], 403);
         }
+
         if (!$user->profile || !$user->profile->kelas_id) {
             return response()->json([
                 'status' => false,
@@ -40,7 +41,7 @@ class ScheduleController extends Controller
             ->map(fn($items) => $items->map(fn($s) => [
                 'id' => $s->id,
                 'mapel' => $s->subject->nama_mapel ?? '-',
-                'guru' => $s->guru->profile->nama_lengkap ?? '-',
+                'guru' => optional($s->guru->profile)->nama_lengkap ?? '-',
                 'jam_mulai' => $s->jam_mulai,
                 'jam_selesai' => $s->jam_selesai,
                 'ruangan' => $s->ruangan,
@@ -52,9 +53,9 @@ class ScheduleController extends Controller
         ]);
     }
 
-    /**
-     * GET JADWAL GURU (jadwal mengajar guru)
-     */
+    /* =====================================================
+    | GET JADWAL GURU
+    ===================================================== */
     public function teacherSchedule(Request $request)
     {
         $user = $request->user();
@@ -87,13 +88,22 @@ class ScheduleController extends Controller
         ]);
     }
 
-    /**
-     * GET JADWAL PER HARI (Flutter real-time)
-     */
+    /* =====================================================
+    | TODAY SCHEDULE (FINAL FIXED)
+    ===================================================== */
     public function todaySchedule(Request $request)
     {
         $user = $request->user();
-        $hariIni = Carbon::now()->locale('id')->translatedFormat('l');
+
+        $hariIni = match (Carbon::now()->dayOfWeekIso) {
+            1 => 'Senin',
+            2 => 'Selasa',
+            3 => 'Rabu',
+            4 => 'Kamis',
+            5 => 'Jumat',
+            6 => 'Sabtu',
+            7 => 'Minggu',
+        };
 
         $query = Schedule::with(['subject', 'kelas', 'guru.profile'])
             ->where('hari', $hariIni);
@@ -111,29 +121,42 @@ class ScheduleController extends Controller
         if ($user->role === 'guru') {
             $query->where('user_id', $user->id);
         }
+
         $schedules = $query->orderBy('jam_mulai')->get()->map(function ($s) use ($user) {
+
+            // 🔥 FIX: HAPUS whereDate(created_at)
+            $session = AttendanceSession::where('schedule_id', $s->id)
+                ->where('kelas_id', $s->kelas_id)
+                ->where('subject_id', $s->subject_id)
+                ->where('is_active', 1)
+                ->first();
+
             $item = [
                 'id' => $s->id,
+                'subject_id' => $s->subject_id,
+                'schedule_id' => $s->id,
                 'name' => $s->subject->nama_mapel ?? '-',
                 'jam_mulai' => $s->jam_mulai,
                 'jam_selesai' => $s->jam_selesai,
                 'ruangan' => $s->ruangan,
+                'session_open' => $session !== null,
+                'session_id' => $session?->id,
             ];
 
             if ($user->role === 'guru') {
-                $session = AttendanceSession::where([
-                    'schedule_id' => $s->id,
-                    'is_active' => true
-                ])->first();
-
                 $item['kelas'] = $s->kelas->nama_kelas ?? '-';
-                $item['session_open'] = $session !== null;
-                $item['session_id'] = $session?->id;
             }
 
             if ($user->role === 'siswa') {
-                $item['guru'] = $s->guru->profile->nama_lengkap ?? '-';
-                $item['attended'] = false;
+
+                $item['guru'] = optional($s->guru->profile)->nama_lengkap ?? '-';
+
+                // 🔥 CEK SUDAH ABSEN BERDASARKAN SESSION
+                $item['attended'] = $session
+                    ? Attendance::where('user_id', $user->id)
+                        ->where('attendance_session_id', $session->id)
+                        ->exists()
+                    : false;
             }
 
             return $item;

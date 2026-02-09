@@ -18,113 +18,66 @@ class AttendanceController extends Controller
     /* =====================================================
     | SISWA CHECK-IN MAPEL
     ===================================================== */
-    public function studentCheckIn(Request $request)
-    {
-        $request->validate([
-            'subject_id' => 'required|integer|exists:subjects,id',
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-            'foto' => 'nullable|image'
-        ]);
+  public function studentCheckIn(Request $request)
+{
+    $request->validate([
+        'schedule_id' => 'required|exists:schedules,id',
+        'latitude' => 'required|numeric',
+        'longitude' => 'required|numeric',
+        'foto' => 'nullable|image'
+    ]);
 
-        $user = $request->user();
+    $user = $request->user();
+    if ($user->role !== 'siswa')
+        return response()->json(['status' => false], 403);
 
-        if ($user->role !== 'siswa')
-            return response()->json(['status' => false, 'message' => 'Unauthorized'], 403);
+    $session = AttendanceSession::where([
+        'schedule_id' => $request->schedule_id,
+        'is_active' => true
+    ])->first();
 
-        if (!$user->profile || !$user->profile->kelas_id)
-            return response()->json(['status' => false, 'message' => 'Data kelas tidak lengkap'], 422);
-
-        $today = now()->toDateString();
-        $now = now();
-
-        /* ===== VALIDASI MAPEL ===== */
-        $subject = Subject::find($request->subject_id);
-
-        if (!$subject || $subject->kelas_id !== $user->profile->kelas_id)
-            return response()->json(['status' => false, 'message' => 'Mapel tidak sesuai kelas'], 403);
-
-        /* ===== VALIDASI JAM PELAJARAN ===== */
-        $schedule = Schedule::where('subject_id', $subject->id)
-            ->where('kelas_id', $user->profile->kelas_id)
-            ->where('hari', now()->translatedFormat('l'))
-            ->whereTime('jam_mulai', '<=', $now)
-            ->whereTime('jam_selesai', '>=', $now)
-            ->first();
-
-        if (!$schedule)
-            return response()->json(['status' => false, 'message' => 'Bukan jam pelajaran'], 403);
-
-        /* ===== CEK SESSION ===== */
-        $session = AttendanceSession::where([
-            'schedule_id' => $schedule->id,
-            'is_active' => true
-        ])->first();
-
-        if (!$session)
-            return response()->json(['status' => false, 'message' => 'Absen belum dibuka guru'], 403);
-
-        /* ===== SUDAH ABSEN ===== */
-        if (
-            Attendance::where([
-                'user_id' => $user->id,
-                'tanggal' => $today,
-                'subject_id' => $subject->id
-            ])->exists()
-        )
-            return response()->json(['status' => false, 'message' => 'Sudah absen'], 409);
-
-        /* ===== VALIDASI LOKASI ===== */
-        $school = School::first();
-        if ($school) {
-            $distance = $this->distance(
-                $school->latitude,
-                $school->longitude,
-                $request->latitude,
-                $request->longitude
-            );
-            if ($distance > $school->radius)
-                return response()->json(['status' => false, 'message' => 'Di luar area sekolah'], 403);
-            if ($distance < $school->radius && !$request->hasFile('foto'))
-                return response()->json(['status' => true, 'message' => 'Di dalam area sekolah'], 403);
-        }
-
-        /* ===== STATUS ===== */
-        $jamTerlambat = Carbon::createFromTime(8, 15);
-        $status = $now->lte($jamTerlambat) ? 'hadir' : 'terlambat';
-
-        /* ===== FOTO ===== */
-        $path = $request->hasFile('foto')
-            ? $request->file('foto')->store('absensi', 'public')
-            : null;
-
-
-        /* ===== SIMPAN ===== */
-        $attendance = Attendance::create([
-            'user_id' => $user->id,
-            'role' => 'siswa',
-            'tanggal' => $today,
-            'jam_masuk' => $now,
-            'subject_id' => $subject->id,
-            'kelas_id' => $user->profile->kelas_id,
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-            'foto' => $path,
-            'status' => $status,
-            'attendance_session_id' => $session->id
-        ]);
-
+    if (!$session)
         return response()->json([
-            'status' => true,
-            'message' => 'Presensi berhasil',
-            'data' => [
-                'nama' => $user->profile->nama_lengkap,
-                'mapel' => $subject->nama_mapel,
-                'jam' => $attendance->jam_masuk->format('H:i'),
-                'status' => $status
-            ]
-        ]);
-    }
+            'status' => false,
+            'message' => 'Absen belum dibuka guru'
+        ], 403);
+
+    if (Attendance::where([
+        'user_id' => $user->id,
+        'attendance_session_id' => $session->id
+    ])->exists())
+        return response()->json([
+            'status' => false,
+            'message' => 'Sudah absen'
+        ], 409);
+
+    $path = $request->hasFile('foto')
+        ? $request->file('foto')->store('absensi', 'public')
+        : null;
+
+   $schedule = Schedule::find($request->schedule_id); // <- ini baru
+
+Attendance::create([
+    'user_id' => $user->id,
+    'role' => 'siswa',
+    'tanggal' => now()->toDateString(),
+    'jam_masuk' => now(),
+    'attendance_session_id' => $session->id,
+    'schedule_id' => $request->schedule_id,
+    'subject_id' => $schedule->subject_id, // <- ini tambahan
+    'kelas_id' => $user->profile->kelas_id,
+    'latitude' => $request->latitude,
+    'longitude' => $request->longitude,
+    'foto' => $path,
+    'status' => 'hadir'
+]);
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Presensi berhasil'
+    ]);
+}
+
 
 
     /* =====================================================
@@ -185,42 +138,59 @@ class AttendanceController extends Controller
     /* =====================================================
     | SISWA HISTORY
     ===================================================== */
-    public function studentHistory(Request $request)
-    {
-        $history = Attendance::where('user_id', $request->user()->id)
-            ->with('subject')
-            ->orderByDesc('jam_masuk')
-            ->get()
-            ->map(fn($a) => [
-                'tanggal' => $a->tanggal->format('Y-m-d'),
-                'jam' => $a->jam_masuk?->format('H:i'),
-                'status' => $a->status,
-                'subject' => $a->subject?->nama_mapel ?? '-'
-            ]);
+   /* =====================================================
+| SISWA HISTORY (DENGAN JAM PULANG, FOTO, DAN LOKASI)
+===================================================== */
+public function studentHistory(Request $request)
+{
+    $history = Attendance::where('user_id', $request->user()->id)
+        ->with('subject')
+        ->orderByDesc('jam_masuk')
+        ->get()
+        ->map(fn($a) => [
+            'tanggal'   => $a->tanggal?->format('Y-m-d') ?? '-',
+            'jam'       => $a->jam_masuk?->format('H:i') ?? '-',
+            'time_out'  => $a->jam_pulang?->format('H:i') ?? '-',
+            'status'    => $a->status ?? '-',
+            'subject'   => $a->subject?->nama_mapel ?? '-',
+            'latitude'  => $a->latitude ?? null,
+            'longitude' => $a->longitude ?? null,
+            'foto'      => $a->foto ? asset('storage/' . $a->foto) : null,
+        ]);
 
-        return response()->json(['status' => true, 'data' => $history]);
-    }
+    return response()->json([
+        'status' => true,
+        'data' => $history,
+    ]);
+}
+
 
 
     /* =====================================================
     | TODAY
     ===================================================== */
-    public function today(Request $request)
-    {
-        $today = Carbon::today()->toDateString();
+   public function today(Request $request)
+{
+    $today = Carbon::today()->toDateString();
 
-        $attendance = Attendance::where('user_id', $request->user()->id)
-            ->where('tanggal', $today)
-            ->with('subject')
-            ->first();
-        if (!$attendance)
-            return response()->json([]);
+    $attendance = Attendance::where('user_id', $request->user()->id)
+        ->where('tanggal', $today)
+        ->first();
 
+    if (!$attendance) {
         return response()->json([
-            'check_in_time' => $attendance->jam_masuk?->format('H:i'),
-            'subject' => $attendance->subject?->nama_mapel
+            'check_in'  => null,
+            'check_out' => null,
         ]);
     }
+
+    return response()->json([
+        'check_in'  => $attendance->jam_masuk,
+        'check_out' => $attendance->jam_pulang,
+        'status'    => $attendance->status,
+    ]);
+}
+
 
 
     /* =====================================================

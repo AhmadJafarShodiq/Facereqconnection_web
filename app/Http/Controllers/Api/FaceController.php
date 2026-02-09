@@ -44,8 +44,8 @@ class FaceController extends Controller
             ], 404);
         }
 
-        $inputEmbedding  = array_map('floatval', $request->embedding);
-        $storedEmbedding = array_map('floatval', $faceData->embedding);
+       $inputEmbedding  = array_values(array_map('floatval', $request->embedding));
+$storedEmbedding = array_values(array_map('floatval', $faceData->embedding));
 
 
         $dot = 0.0;
@@ -69,7 +69,7 @@ class FaceController extends Controller
         }
 
         $cosine = $dot / (sqrt($normA) * sqrt($normB));
-        $threshold = 0.75;
+     $threshold = 0.70;
 
         return response()->json([
             'status'     => $cosine >= $threshold,
