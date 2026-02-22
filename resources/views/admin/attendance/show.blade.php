@@ -1,22 +1,29 @@
 @extends('admin.layouts.app')
-@section('title','Detail Attendance')
+@section('title','Detail Absensi')
 
 @section('content')
-<h2>Detail Absensi</h2>
-<ul class="list-group mb-3">
-    <li class="list-group-item"><strong>Username:</strong> {{ $attendance->user->username }}</li>
-    <li class="list-group-item"><strong>Nama:</strong> {{ $attendance->user->profile->nama_lengkap ?? '-' }}</li>
-    <li class="list-group-item"><strong>Tanggal:</strong> {{ $attendance->tanggal->format('Y-m-d') }}</li>
-    <li class="list-group-item"><strong>Jam Masuk:</strong> {{ optional($attendance->jam_masuk)->format('H:i:s') ?? '-' }}</li>
-    <li class="list-group-item"><strong>Jam Pulang:</strong> {{ optional($attendance->jam_pulang)->format('H:i:s') ?? '-' }}</li>
-    <li class="list-group-item"><strong>Status:</strong> {{ ucfirst($attendance->status) }}</li>
-    <li class="list-group-item"><strong>Foto Bukti:</strong>
+<div class="card">
+    <div class="card-body">
+        <ul class="list-group">
+            <li class="list-group-item"><b>User:</b> {{ $attendance->user->username }}</li>
+            <li class="list-group-item"><b>Nama:</b> {{ $attendance->user->profile->nama_lengkap ?? '-' }}</li>
+            <li class="list-group-item"><b>Tanggal:</b> {{ $attendance->tanggal->format('Y-m-d') }}</li>
+            <li class="list-group-item"><b>Mapel:</b> {{ $attendance->subject->nama_mapel ?? '-' }}</li>
+            <li class="list-group-item"><b>Kelas:</b> {{ $attendance->kelas->nama_kelas ?? '-' }}</li>
+            <li class="list-group-item"><b>Masuk:</b> {{ optional($attendance->jam_masuk)->format('H:i') }}</li>
+            <li class="list-group-item"><b>Pulang:</b> {{ optional($attendance->jam_pulang)->format('H:i') }}</li>
+            <li class="list-group-item"><b>Status:</b> {{ strtoupper($attendance->status) }}</li>
+        </ul>
+
         @if($attendance->foto)
-            <img src="{{ asset('storage/'.$attendance->foto) }}" width="150">
+            <img src="{{ asset('storage/'.$attendance->foto) }}"
+                 class="img-fluid mt-3">
         @endif
-    </li>
-</ul>
-<a href="{{ route('admin.attendance.index') }}" class="btn btn-secondary">
-    <i class="bi bi-arrow-left"></i> Kembali
-</a>
+
+        <a href="{{ route('admin.attendance.index') }}"
+           class="btn btn-secondary mt-3">
+            Kembali
+        </a>
+    </div>
+</div>
 @endsection

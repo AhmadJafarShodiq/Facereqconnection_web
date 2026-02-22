@@ -2,6 +2,16 @@
 @section('title','Tambah User')
 
 @section('content')
+<h3>Import CSV User</h3>
+<form action="{{ route('admin.users.import') }}" method="POST" enctype="multipart/form-data">
+    @csrf
+    <div class="mb-3">
+        <label>File CSV</label>
+        <input type="file" name="file" class="form-control" accept=".csv" required>
+    </div>
+    <button class="btn btn-primary">Import</button>
+</form>
+
 <h2>Tambah User</h2>
 <form action="{{ route('admin.users.store') }}" method="POST">
     @csrf
@@ -15,10 +25,12 @@
     </div>
     <div class="mb-3">
         <label>Role</label>
-        <select name="role" class="form-control" required>
-            <option value="admin">Admin</option>
-            <option value="user">User</option>
-        </select>
+      <select name="role" class="form-control" required>
+    <option value="admin">Admin</option>
+    <option value="guru">Guru</option>
+    <option value="siswa">Siswa</option>
+</select>
+
     </div>
     <button class="btn btn-success"><i class="bi bi-save"></i> Simpan</button>
 </form>

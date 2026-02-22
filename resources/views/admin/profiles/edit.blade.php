@@ -7,6 +7,17 @@
     @csrf
     @method('PUT')
     <div class="mb-3">
+    <label>Kelas</label>
+    <select name="kelas_id" class="form-control">
+        <option value="">-- Pilih Kelas --</option>
+        @foreach($kelas as $k)
+            <option value="{{ $k->id }}" {{ $profile->kelas_id == $k->id ? 'selected' : '' }}>
+                {{ $k->nama_kelas }}
+            </option>
+        @endforeach
+    </select>
+</div>
+    <div class="mb-3">
         <label>Nama Lengkap</label>
         <input type="text" name="nama_lengkap" class="form-control" value="{{ $profile->nama_lengkap }}" required>
     </div>

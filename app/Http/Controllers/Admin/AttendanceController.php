@@ -12,36 +12,74 @@ class AttendanceController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Attendance::with('user.profile')->orderByDesc('tanggal');
+        $query = Attendance::with(['user.profile','subject','kelas'])
+            ->orderByDesc('tanggal');
 
-        if ($request->user_id)
+        // Filter User
+        if ($request->filled('user_id')) {
             $query->where('user_id', $request->user_id);
-        if ($request->tanggal)
+        }
+
+        // Filter Tanggal
+        if ($request->filled('tanggal')) {
             $query->whereDate('tanggal', $request->tanggal);
+        }
 
-        $attendances = $query->get();
-        $users = User::all();
+        // ✅ Filter Role (guru / siswa)
+        if ($request->filled('role')) {
+            $query->where('role', $request->role);
+        }
 
-        return view('admin.attendance.index', compact('attendances', 'users'));
+        $attendances = $query->paginate(15)->withQueryString();
+        $users = User::orderBy('username')->get();
+
+        return view('admin.attendance.index', compact('attendances','users'));
     }
+
 
     public function show(Attendance $attendance)
     {
+        $attendance->load(['user.profile','subject','kelas']);
         return view('admin.attendance.show', compact('attendance'));
     }
 
+
     public function export(Request $request)
     {
-        $query = Attendance::with('user.profile')->orderByDesc('tanggal');
+        $query = Attendance::with(['user.profile','kelas'])
+            ->orderBy('role')
+            ->orderBy('tanggal');
 
-        if ($request->user_id)
-            $query->where('user_id', $request->user_id);
-        if ($request->tanggal)
-            $query->whereDate('tanggal', $request->tanggal);
+        // Filter Bulan
+        if ($request->filled('bulan')) {
+            $query->whereMonth('tanggal', $request->bulan);
+        }
 
-        $attendances = $query->get();
+        // Filter Tahun
+        if ($request->filled('tahun')) {
+            $query->whereYear('tanggal', $request->tahun);
+        }
+
+        // ✅ Tambahan Filter Role saat export juga
+        if ($request->filled('role')) {
+            $query->where('role', $request->role);
+        }
+
+        $data = $query->get();
+
+        $attendances = [
+            'guru' => $data->where('role', 'guru')
+                ->groupBy(fn ($i) => $i->tanggal->format('Y-m')),
+
+            'siswa' => $data->where('role', 'siswa')
+                ->groupBy([
+                    'kelas_id',
+                    fn ($i) => $i->tanggal->format('Y-m')
+                ]),
+        ];
 
         $pdf = Pdf::loadView('admin.attendance.export', compact('attendances'));
-        return $pdf->download('attendance_' . now()->format('Y-m-d') . '.pdf');
+
+        return $pdf->download('rekap_absensi.pdf');
     }
 }

@@ -23,13 +23,11 @@ class DashboardController extends Controller
          * SISWA
          * ====================== */
         if ($user->role === 'siswa') {
-
-            $hadir = Attendance::where('user_id',$user->id)
-                ->where('tanggal',$today)
-                ->where('status','hadir')
-                ->count();
-
-            $terlambat = Attendance::where('user_id',$user->id)
+    $hadir = Attendance::where('user_id',$user->id)
+    ->where('tanggal',$today)
+    ->whereNotNull('attendance_session_id')
+    ->count();
+          $terlambat = Attendance::where('user_id',$user->id)
                 ->where('tanggal',$today)
                 ->where('status','terlambat')
                 ->count();

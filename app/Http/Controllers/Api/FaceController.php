@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\FaceData;
-
+    
 class FaceController extends Controller
 {
     public function register(Request $request)

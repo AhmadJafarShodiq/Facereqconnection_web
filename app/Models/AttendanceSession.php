@@ -24,4 +24,22 @@ class AttendanceSession extends Model
         'ended_at'   => 'datetime',
         'is_active'  => 'boolean',
     ];
+
+// App\Models\AttendanceSession.php
+
+public function guru()
+{
+    return $this->belongsTo(User::class, 'guru_id');
+}
+
+public function subject()
+{
+    return $this->belongsTo(Subject::class);
+}
+
+public function kelas()
+{
+    return $this->belongsTo(Kelas::class, 'kelas_id');
+}
+
 }

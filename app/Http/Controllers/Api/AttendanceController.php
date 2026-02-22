@@ -5,9 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Attendance;
-use App\Models\School;
 use App\Models\Subject;
-use App\Models\User;
 use App\Models\AttendanceSession;
 use App\Models\Schedule;
 use Carbon\Carbon;
@@ -56,7 +54,8 @@ class AttendanceController extends Controller
         : null;
 
    $schedule = Schedule::find($request->schedule_id); // <- ini baru
-
+$now = now();
+$status = $now->gt(Carbon::parse($schedule->jam_mulai)) ? 'terlambat' : 'hadir';
 Attendance::create([
     'user_id' => $user->id,
     'role' => 'siswa',
@@ -69,7 +68,7 @@ Attendance::create([
     'latitude' => $request->latitude,
     'longitude' => $request->longitude,
     'foto' => $path,
-    'status' => 'hadir'
+    'status' => $status
 ]);
 
     return response()->json([
@@ -84,63 +83,67 @@ Attendance::create([
     | GURU CHECK-IN
     ===================================================== */
     public function teacherCheckIn(Request $request)
-    {
-        $request->validate([
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric'
-        ]);
+{
+    $request->validate([
+        'latitude' => 'required|numeric',
+        'longitude' => 'required|numeric'
+    ]);
 
-        $user = $request->user();
+    $user = $request->user();
 
-        if ($user->role !== 'guru')
-            return response()->json(['status' => false], 403);
+    if ($user->role !== 'guru')
+        return response()->json(['status' => false], 403);
 
-        $today = Carbon::today()->toDateString();
+    $today = Carbon::today()->toDateString();
 
-        if (Attendance::where('user_id', $user->id)->where('tanggal', $today)->exists())
-            return response()->json(['status' => false, 'message' => 'Sudah presensi'], 409);
+    if (Attendance::where('user_id', $user->id)->where('tanggal', $today)->exists())
+        return response()->json(['status' => false, 'message' => 'Sudah presensi'], 409);
 
-        $attendance = Attendance::create([
-            'user_id' => $user->id,
-            'role' => 'guru',
-            'tanggal' => $today,
-            'jam_masuk' => now(),
-            'latitude' => $request->latitude,
-            'longitude' => $request->longitude,
-            'status' => 'hadir'
-        ]);
+    // ===== JAM SEKOLAH =====
+    $jamMasukSekolah  = Carbon::parse('08:00'); // jam mulai sekolah
+    $now = now();
+    $status = $now->gt($jamMasukSekolah) ? 'terlambat' : 'hadir';
 
-        return response()->json(['status' => true, 'data' => $attendance]);
-    }
+    $attendance = Attendance::create([
+        'user_id' => $user->id,
+        'role' => 'guru',
+        'tanggal' => $today,
+        'jam_masuk' => $now,
+        'latitude' => $request->latitude,
+        'longitude' => $request->longitude,
+        'status' => $status
+    ]);
 
+    return response()->json(['status' => true, 'data' => $attendance]);
+}
 
-    /* =====================================================
-    | GURU CHECK-OUT
-    ===================================================== */
-    public function teacherCheckOut(Request $request)
-    {
-        $attendance = Attendance::where('user_id', $request->user()->id)
-            ->where('tanggal', Carbon::today()->toDateString())
-            ->first();
-
-        if (!$attendance || $attendance->jam_pulang)
-            return response()->json(['status' => false], 409);
-
-        $attendance->update([
-            'jam_pulang' => now(),
-            'status' => 'pulang'
-        ]);
-
-        return response()->json(['status' => true]);
-    }
-
-
-    /* =====================================================
-    | SISWA HISTORY
-    ===================================================== */
-   /* =====================================================
-| SISWA HISTORY (DENGAN JAM PULANG, FOTO, DAN LOKASI)
+/* =====================================================
+| GURU CHECK-OUT
 ===================================================== */
+public function teacherCheckOut(Request $request)
+{
+    $attendance = Attendance::where('user_id', $request->user()->id)
+        ->where('tanggal', Carbon::today()->toDateString())
+        ->first();
+
+    if (!$attendance || $attendance->jam_pulang)
+        return response()->json(['status' => false], 409);
+
+    // ===== JAM SEKOLAH =====
+    $jamPulangSekolah = Carbon::parse('16:00'); // jam selesai sekolah
+    $now = now();
+    $status = $now->lt($jamPulangSekolah) ? 'pulang cepat' : 'pulang';
+
+    $attendance->update([
+        'jam_pulang' => $now,
+        'status' => $status
+    ]);
+
+    return response()->json(['status' => true]);
+}
+
+
+
 public function studentHistory(Request $request)
 {
     $history = Attendance::where('user_id', $request->user()->id)
@@ -169,25 +172,28 @@ public function studentHistory(Request $request)
     /* =====================================================
     | TODAY
     ===================================================== */
-   public function today(Request $request)
+public function today(Request $request)
 {
+    $user = $request->user();
     $today = Carbon::today()->toDateString();
 
-    $attendance = Attendance::where('user_id', $request->user()->id)
-        ->where('tanggal', $today)
-        ->first();
+    if ($user->role === 'guru') {
+        $attendance = Attendance::where('user_id', $user->id)
+            ->where('tanggal', $today)
+            ->first();
 
-    if (!$attendance) {
         return response()->json([
-            'check_in'  => null,
-            'check_out' => null,
+            'check_in'  => $attendance?->jam_masuk,
+            'check_out' => $attendance?->jam_pulang,
+            'status'    => $attendance?->status,
         ]);
     }
 
+    // 🔥 SISWA → JANGAN DIKUNCI PER HARI
     return response()->json([
-        'check_in'  => $attendance->jam_masuk,
-        'check_out' => $attendance->jam_pulang,
-        'status'    => $attendance->status,
+        'check_in'  => null,
+        'check_out' => null,
+        'status'    => null,
     ]);
 }
 

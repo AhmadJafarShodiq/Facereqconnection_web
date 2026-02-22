@@ -1,8 +1,10 @@
 <?php
 
 namespace App\Models;
+use App\Models\Kelas;
 
 use Illuminate\Database\Eloquent\Model;
+
 
 class Profile extends Model
 {
@@ -21,6 +23,11 @@ class Profile extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+public function kelas()
+{
+    return $this->belongsTo(\App\Models\Kelas::class, 'kelas_id');
+}
     
 }
 

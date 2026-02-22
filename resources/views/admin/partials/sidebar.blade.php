@@ -43,9 +43,38 @@
                     <a href="{{ route('admin.face-data.index') }}"
                        class="nav-link {{ request()->routeIs('admin.face-data.*') ? 'active' : '' }}">
                         <i class="nav-icon bi bi-camera"></i>
-                        <p>Face Data</p>
+                        <p>Face User</p>
                     </a>
                 </li>
+            
+                <li class="nav-item">
+    <a href="{{ route('admin.classes.index') }}"
+       class="nav-link {{ request()->routeIs('admin.classes.*') ? 'active' : '' }}">
+        <i class="nav-icon bi bi-building"></i>
+        <p>Kelas</p>
+    </a>
+</li>
+
+  <li class="nav-item">
+    <a href="{{ route('admin.subjects.index') }}"
+       class="nav-link {{ request()->routeIs('admin.subjects.*') ? 'active' : '' }}">
+        <i class="nav-icon bi bi-book"></i>
+        <p>Mapel</p>
+    </a>
+</li>
+
+
+
+{{-- JADWAL --}}
+<li class="nav-item">
+    <a href="{{ route('admin.schedules.index') }}"
+       class="nav-link {{ request()->routeIs('admin.schedules.*') ? 'active' : '' }}">
+        <i class="nav-icon bi bi-calendar-week"></i>
+        <p>Jadwal</p>
+    </a>
+</li>
+
+
 
                 {{-- ATTENDANCE --}}
                 <li class="nav-item">

@@ -232,3 +232,175 @@
   position: relative;
   z-index: 1030;
 }
+
+/* ================= DASHBOARD CARDS ================= */
+
+.dashboard-card {
+  border-radius: 18px !important;
+  color: #ffffff;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  transition: all 0.25s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.12);
+}
+
+.dashboard-card h3 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.dashboard-card p {
+  margin: 0;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+.card-blue {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.card-green {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.card-yellow {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.card-red {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+/* ================= TABLE STYLE ================= */
+
+.dashboard-box {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.dashboard-box h5 {
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.table-dashboard thead {
+  background-color: #f1f5f9;
+}
+
+.table-dashboard th {
+  font-weight: 600;
+  color: #334155;
+}
+
+.table-dashboard td {
+  vertical-align: middle;
+}
+
+.table-dashboard tr:hover {
+  background-color: #f8fafc;
+}
+/* FORCE OVERRIDE ADMINLTE SMALL BOX */
+
+.app-content .small-box {
+  border-radius: 20px !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12) !important;
+  overflow: hidden;
+  transition: all 0.3s ease !important;
+}
+
+.app-content .small-box:hover {
+  transform: translateY(-6px) !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18) !important;
+}
+
+.app-content .small-box .icon {
+  font-size: 70px !important;
+  opacity: 0.2 !important;
+  top: 15px !important;
+}
+/* ================= MODERN STAT CARD ================= */
+
+.stat-card {
+  border-radius: 20px;
+  padding: 24px;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+  min-height: 130px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 45px rgba(0,0,0,0.12);
+}
+
+.stat-title {
+  font-size: 14px;
+  opacity: 0.9;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.stat-card h2 {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.stat-icon {
+  font-size: 48px;
+  opacity: 0.15;
+}
+/* ===== FIX JARAK DARI HEADER ===== */
+body {
+    overflow-x: hidden;
+}
+
+.app-content .container-fluid {
+    padding-top: 15px;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+/* Paksa sidebar full tinggi layar */
+.app-sidebar {
+    height: 100vh !important;
+    position: fixed !important;
+}
+
+/* Geser content supaya tidak ketiban sidebar */
+.app-main {
+    margin-left: 250px; /* sesuaikan dengan lebar sidebar */
+}
+
+/* Cegah overflow horizontal */
+body {
+    overflow-x: hidden;
+}
+/* Fix icon membesar tidak wajar */
+.app-content i {
+    font-size: inherit !important;
+}
+
+.bi {
+    font-size: 1rem !important;
+}
+svg {
+    width: 16px !important;
+    height: 16px !important;
+}

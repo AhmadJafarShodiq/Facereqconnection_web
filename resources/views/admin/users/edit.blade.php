@@ -13,8 +13,9 @@
     <div class="mb-3">
         <label>Role</label>
         <select name="role" class="form-control" required>
-            <option value="admin" {{ $user->role=='admin'?'selected':'' }}>Admin</option>
-            <option value="user" {{ $user->role=='user'?'selected':'' }}>User</option>
+        <option value="guru" {{ $user->role=='guru'?'selected':'' }}>Guru</option>
+        <option value="siswa" {{ $user->role=='siswa'?'selected':'' }}>Siswa</option>
+
         </select>
     </div>
     <button class="btn btn-success"><i class="bi bi-save"></i> Update</button>

@@ -1,74 +1,130 @@
 @extends('admin.layouts.app')
-@section('title', 'Attendance')
+@section('title','Attendance')
 
 @section('content')
-    <h2 class="mb-4">List Absensi</h2>
+<div class="card">
+    <div class="card-body">
 
-    <form method="GET" class="row mb-3">
-        <div class="col-md-3">
-            <input type="date" name="tanggal" value="{{ request('tanggal') }}" class="form-control">
-        </div>
-        <div class="col-md-3">
-            <select name="user_id" class="form-control">
-                <option value="">-- Semua User --</option>
-                @foreach($users as $user)
-                    <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>
-                        {{ $user->username }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-        <div class="col-md-3">
-            <button class="btn btn-primary"><i class="bi bi-search"></i> Filter</button>
-        </div>
-    </form>
+        <h5 class="mb-3">Rekap Absensi</h5>
 
-    <table class="table table-bordered table-hover">
-        <thead class="table-light">
-            <tr>
-                <th>Tanggal</th>
-                <th>Username</th>
-                <th>Nama</th>
-                <th>Jam Masuk</th>
-                <th>Jam Pulang</th>
-                <th>Status</th>
-                <th>Foto Bukti</th>
-                <th>Aksi</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($attendances as $attendance)
+        {{-- FORM FILTER --}}
+       <form method="GET" id="filterForm" class="row g-2 mb-3">
+
+    {{-- Filter Tanggal --}}
+    <div class="col-md-3">
+        <input type="date"
+               name="tanggal"
+               value="{{ request('tanggal') }}"
+               class="form-control"
+               onchange="document.getElementById('filterForm').submit()">
+    </div>
+
+    {{-- Filter Role --}}
+    <div class="col-md-3">
+        <select name="role"
+                class="form-select"
+                onchange="document.getElementById('filterForm').submit()">
+
+            <option value="">-- Semua Role --</option>
+            <option value="guru" {{ request('role')=='guru'?'selected':'' }}>
+                Guru
+            </option>
+            <option value="siswa" {{ request('role')=='siswa'?'selected':'' }}>
+                Siswa
+            </option>
+        </select>
+    </div>
+
+    {{-- Filter User --}}
+    <div class="col-md-3">
+        <select name="user_id"
+                class="form-select"
+                onchange="document.getElementById('filterForm').submit()">
+
+            <option value="">-- Semua User --</option>
+            @foreach($users as $user)
+                <option value="{{ $user->id }}"
+                    {{ request('user_id')==$user->id?'selected':'' }}>
+                    {{ $user->username }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+
+</form>
+
+        {{-- TABEL --}}
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-light">
                 <tr>
-                    <td>{{ $attendance->tanggal->format('Y-m-d') }}</td>
-                    <td>{{ $attendance->user->username }}</td>
-                    <td>{{ $attendance->user->profile->nama_lengkap ?? '-' }}</td>
-                    <td>{{ optional($attendance->jam_masuk)->format('H:i:s') ?? '-' }}</td>
-                    <td>{{ optional($attendance->jam_pulang)->format('H:i:s') ?? '-' }}</td>
-                    <td>{{ ucfirst($attendance->status) }}</td>
+                    <th>Tanggal</th>
+                    <th>Role</th>
+                    <th>User</th>
+                    <th>Nama</th>
+                    <th>Mapel</th>
+                    <th>Kelas</th>
+                    <th>Masuk</th>
+                    <th>Pulang</th>
+                    <th>Status</th>
+                    <th>Foto</th>
+                    <th width="80">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($attendances as $a)
+                <tr>
+                    <td>{{ $a->tanggal->format('Y-m-d') }}</td>
+
+                    {{-- Role --}}
                     <td>
-                        @if($attendance->foto)
-                            <a href="{{ asset('storage/' . $attendance->foto) }}" target="_blank">
-                                <img src="{{ asset('storage/' . $attendance->foto) }}" width="60">
+                        <span class="badge bg-secondary">
+                            {{ ucfirst($a->role) }}
+                        </span>
+                    </td>
+
+                    <td>{{ $a->user->username }}</td>
+                    <td>{{ $a->user->profile->nama_lengkap ?? '-' }}</td>
+                    <td>{{ $a->subject->nama_mapel ?? '-' }}</td>
+                    <td>{{ $a->kelas->nama_kelas ?? '-' }}</td>
+                    <td>{{ optional($a->jam_masuk)->format('H:i') ?? '-' }}</td>
+                    <td>{{ optional($a->jam_pulang)->format('H:i') ?? '-' }}</td>
+
+                    <td>
+                        <span class="badge bg-{{ $a->status=='hadir'?'success':'danger' }}">
+                            {{ strtoupper($a->status) }}
+                        </span>
+                    </td>
+
+                    <td>
+                        @if($a->foto)
+                            <a href="{{ asset('storage/'.$a->foto) }}" target="_blank">
+                                <img src="{{ asset('storage/'.$a->foto) }}" width="50">
                             </a>
                         @endif
                     </td>
+
                     <td>
-                        <a href="{{ route('admin.attendance.show', $attendance->id) }}" class="btn btn-sm btn-info">
-                            <i class="bi bi-eye"></i> Detail
+                        <a href="{{ route('admin.attendance.show',$a->id) }}"
+                           class="btn btn-sm btn-info">
+                            <i class="bi bi-eye"></i>
                         </a>
                     </td>
                 </tr>
-            @endforeach
-        </tbody>
-    </table>
+                @empty
+                <tr>
+                    <td colspan="11" class="text-center">Data kosong</td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
 
-    <div class="mt-3">
-        <a href="{{ route('admin.attendance.export', [
-        'user_id' => request('user_id'),
-        'tanggal' => request('tanggal')
-    ]) }}" class="btn btn-success">
-            <i class="bi bi-file-earmark-arrow-down"></i> Export PDF/Excel
+        {{ $attendances->links() }}
+
+        <a href="{{ route('admin.attendance.export', request()->query()) }}"
+           class="btn btn-success mt-3">
+            <i class="bi bi-file-earmark-pdf"></i> Export PDF
         </a>
-    </div>
 
+    </div>
+</div>
 @endsection

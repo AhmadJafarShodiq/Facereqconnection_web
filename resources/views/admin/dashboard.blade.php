@@ -1,64 +1,155 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Dashboard')
+@section('title','Dashboard')
 
 @section('content')
-<div class="container-fluid">
 
-    <div class="mb-4">
-        <h4 class="mb-0">Admin Dashboard</h4>
-        <small class="text-muted">
-            Selamat datang di Sistem Absensi Face Recognition
-        </small>
+<div class="row mb-4">
+
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-primary">
+            <div class="stat-content">
+                <span class="stat-title">Total Guru</span>
+                <h2>{{ $totalGuru }}</h2>
+            </div>
+            <div class="stat-icon">
+                <i class="bi bi-person-badge"></i>
+            </div>
+        </div>
     </div>
 
-    <div class="row">
-
-        {{-- MASTER USER --}}
-        <div class="col-md-3 mb-3">
-            <div class="card shadow-sm border-0">
-                <div class="card-body">
-                    <h6 class="fw-bold">Master User</h6>
-                    <p class="text-muted mb-2">Manajemen akun login</p>
-                    <span class="badge bg-primary">Admin Only</span>
-                </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-success">
+            <div class="stat-content">
+                <span class="stat-title">Total Siswa</span>
+                <h2>{{ $totalSiswa }}</h2>
+            </div>
+            <div class="stat-icon">
+                <i class="bi bi-people"></i>
             </div>
         </div>
+    </div>
 
-        {{-- PROFILE --}}
-        <div class="col-md-3 mb-3">
-            <div class="card shadow-sm border-0">
-                <div class="card-body">
-                    <h6 class="fw-bold">Profile</h6>
-                    <p class="text-muted mb-2">Data identitas manusia</p>
-                    <span class="badge bg-success">Tanpa Face</span>
-                </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-warning">
+            <div class="stat-content">
+                <span class="stat-title">Total Kelas</span>
+                <h2>{{ $totalKelas }}</h2>
+            </div>
+            <div class="stat-icon">
+                <i class="bi bi-building"></i>
             </div>
         </div>
+    </div>
 
-        {{-- FACE DATA --}}
-        <div class="col-md-3 mb-3">
-            <div class="card shadow-sm border-0">
-                <div class="card-body">
-                    <h6 class="fw-bold">Face Data</h6>
-                    <p class="text-muted mb-2">Status & reset wajah</p>
-                    <span class="badge bg-warning text-dark">Admin View</span>
-                </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card bg-danger">
+            <div class="stat-content">
+                <span class="stat-title">Total Mapel</span>
+                <h2>{{ $totalMapel }}</h2>
+            </div>
+            <div class="stat-icon">
+                <i class="bi bi-book"></i>
             </div>
         </div>
-
-        {{-- ATTENDANCE --}}
-        <div class="col-md-3 mb-3">
-            <div class="card shadow-sm border-0">
-                <div class="card-body">
-                    <h6 class="fw-bold">Attendance</h6>
-                    <p class="text-muted mb-2">Laporan kehadiran</p>
-                    <span class="badge bg-info">Read Only</span>
-                </div>
-            </div>
-        </div>
-
     </div>
 
 </div>
+
+
+<div class="row mt-4">
+
+    {{-- ================= SESI AKTIF ================= --}}
+
+    <div class="col-md-6">
+        <div class="card shadow-sm rounded-4">
+            <div class="card-header bg-white border-0">
+                <h5 class="mb-0 fw-semibold">
+                    Kelas Sedang Berlangsung 
+                    <span class="badge bg-primary">{{ $sesiAktif }}</span>
+                </h5>
+            </div>
+
+            <div class="card-body table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Guru</th>
+                            <th>Mapel</th>
+                            <th>Kelas</th>
+                            <th>Mulai</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($kelasSedangBerlangsung as $sesi)
+                        <tr>
+                            <td>{{ $sesi->guru->profile->nama_lengkap ?? '-' }}</td>
+                            <td>{{ $sesi->subject->nama_mapel ?? '-' }}</td>
+                            <td>{{ $sesi->kelas->nama_kelas ?? '-' }}</td>
+                            <td>{{ $sesi->started_at?->format('d M Y H:i') }}</td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">
+                                Tidak ada sesi aktif
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {{-- ================= LOG AKTIVITAS ================= --}}
+
+    <div class="col-md-6">
+        <div class="card shadow-sm rounded-4">
+            <div class="card-header bg-white border-0">
+                <h5 class="mb-0 fw-semibold">Aktivitas Terakhir</h5>
+            </div>
+
+            <div class="card-body table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nama</th>
+                            <th>Status</th>
+                            <th>Waktu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($logAktivitas as $log)
+                        <tr>
+                            <td>{{ $log->user->profile->nama_lengkap ?? '-' }}</td>
+
+                            <td>
+                                @if($log->status == 'hadir')
+                                    <span class="badge bg-success">Hadir</span>
+                                @elseif($log->status == 'pulang')
+                                    <span class="badge bg-secondary">Pulang</span>
+                                @else
+                                    <span class="badge bg-warning text-dark">
+                                        {{ ucfirst($log->status) }}
+                                    </span>
+                                @endif
+                            </td>
+
+                            <td>{{ $log->created_at?->format('d M Y H:i') }}</td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">
+                                Belum ada data
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
 @endsection
