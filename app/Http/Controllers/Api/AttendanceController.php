@@ -132,7 +132,7 @@ public function teacherCheckOut(Request $request)
     // ===== JAM SEKOLAH =====
     $jamPulangSekolah = Carbon::parse('16:00'); // jam selesai sekolah
     $now = now();
-    $status = $now->lt($jamPulangSekolah) ? 'pulang cepat' : 'pulang';
+    $status = $now->lt($jamPulangSekolah) ? 'pulang_dini' : 'pulang';
 
     $attendance->update([
         'jam_pulang' => $now,

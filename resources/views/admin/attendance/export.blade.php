@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <title>Rekap Absensi</title>
     <style>
-        body { font-size: 12px }
-        h2, h3, h4 { margin-bottom: 5px }
+        body { font-family: sans-serif; font-size: 12px }
+        h2, h3 { margin: 5px 0 }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -13,81 +13,70 @@
         }
         th, td {
             border: 1px solid #000;
-            padding: 4px;
+            padding: 5px;
+            text-align: center;
         }
         th { background: #eee }
     </style>
 </head>
 <body>
 
-<h2>Rekap Absensi</h2>
+<h2 style="text-align:center;">REKAP ABSENSI</h2>
+<p style="text-align:center;">
+    Bulan: {{ $bulan ?? '-' }} |
+    Tahun: {{ $tahun ?? '-' }}
+</p>
 
 {{-- ================= GURU ================= --}}
-<h3>ROLE: GURU</h3>
+<h3>Rekap Guru</h3>
 
-@foreach($attendances['guru'] as $bulan => $items)
-    <strong>Bulan: {{ \Carbon\Carbon::createFromFormat('Y-m', $bulan)->translatedFormat('F Y') }}</strong>
-
-    <table>
-        <thead>
-        <tr>
-            <th>Tanggal</th>
-            <th>Username</th>
-            <th>Nama</th>
-            <th>Jam Masuk</th>
-            <th>Jam Pulang</th>
-            <th>Status</th>
-        </tr>
-        </thead>
-        <tbody>
-        @foreach($items as $a)
-            <tr>
-                <td>{{ $a->tanggal->format('d-m-Y') }}</td>
-                <td>{{ $a->user->username }}</td>
-                <td>{{ $a->user->profile->nama_lengkap ?? '-' }}</td>
-                <td>{{ optional($a->jam_masuk)->format('H:i') ?? '-' }}</td>
-                <td>{{ optional($a->jam_pulang)->format('H:i') ?? '-' }}</td>
-                <td>{{ ucfirst($a->status) }}</td>
-            </tr>
-        @endforeach
-        </tbody>
-    </table>
+<table>
+<tr>
+    <th>Nama</th>
+<th>Hadir</th>
+<th>Terlambat</th>
+<th>Total</th>
+</tr>
+@foreach($rekapGuru as $g)
+<tr>
+    <td>{{ $g['nama'] }}</td>
+    <td>{{ $g['hadir'] }}</td>
+    <td>{{ $g['terlambat'] ?? 0 }}</td>
+    <td>{{ $g['total'] }}</td>
+</tr>
 @endforeach
-
+</table>
 
 {{-- ================= SISWA ================= --}}
-<h3>ROLE: SISWA</h3>
+<h3>Rekap Siswa</h3>
 
-@foreach($attendances['siswa'] as $kelasId => $perBulan)
-    <h4>Kelas: {{ optional($perBulan->first()->first()->kelas)->nama ?? '-' }}</h4>
+@foreach($rekapSiswa as $kelas)
+<h4>Kelas: {{ $kelas['nama_kelas'] }}</h4>
 
-    @foreach($perBulan as $bulan => $items)
-        <strong>Bulan: {{ \Carbon\Carbon::createFromFormat('Y-m', $bulan)->translatedFormat('F Y') }}</strong>
-
-        <table>
-            <thead>
-            <tr>
-                <th>Tanggal</th>
-                <th>Username</th>
-                <th>Nama</th>
-                <th>Jam Masuk</th>
-                <th>Status</th>
-            </tr>
-            </thead>
-            <tbody>
-            @foreach($items as $a)
-                <tr>
-                    <td>{{ $a->tanggal->format('d-m-Y') }}</td>
-                    <td>{{ $a->user->username }}</td>
-                    <td>{{ $a->user->profile->nama_lengkap ?? '-' }}</td>
-                    <td>{{ optional($a->jam_masuk)->format('H:i') ?? '-' }}</td>
-                    <td>{{ ucfirst($a->status) }}</td>
-                </tr>
-            @endforeach
-            </tbody>
-        </table>
-    @endforeach
+<table>
+<tr>
+  <th>Nama</th>
+<th>Hadir</th>
+<th>Terlambat</th>
+<th>Total</th>
+</tr>
+@foreach($kelas['siswa'] as $s)
+<tr>
+    <td>{{ $s['nama'] }}</td>
+<td>{{ $s['hadir'] }}</td>
+<td>{{ $s['terlambat'] }}</td>
+<td>{{ $s['total'] }}</td>
+</tr>
 @endforeach
+</table>
+@endforeach
+
+<br><br>
+<p style="text-align:right;">
+Mengetahui,<br>
+Kepala Sekolah<br><br><br>
+_________________________
+</p>
 
 </body>
 </html>

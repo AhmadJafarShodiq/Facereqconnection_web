@@ -14,14 +14,7 @@
                        class="form-control" required>
             </div>
 
-            <div class="mb-3">
-                <label>Kelas</label>
-                <select name="kelas_id" class="form-select" required>
-                    @foreach($kelas as $k)
-                        <option value="{{ $k->id }}">{{ $k->nama_kelas }}</option>
-                    @endforeach
-                </select>
-            </div>
+            <input type="hidden" name="kelas_id" value="{{ $kelas->first()->id }}">
 
             <button class="btn btn-success">Simpan</button>
             <a href="{{ route('admin.subjects.index') }}"

@@ -8,6 +8,7 @@ use App\Models\Schedule;
 use App\Models\User;
 use App\Models\Subject;
 use App\Models\Kelas;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ScheduleController extends Controller
 {
@@ -142,4 +143,73 @@ class ScheduleController extends Controller
             ->route('admin.schedules.index')
             ->with('success','Jadwal berhasil diupdate');
     }
+
+
+public function import(Request $request)
+{
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls'
+    ]);
+
+    $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
+    $rows = $spreadsheet->getActiveSheet()->toArray();
+
+    $inserted = 0;
+    $skipped  = 0;
+
+    foreach ($rows as $index => $row) {
+
+        if ($index == 0) continue;
+
+        $hari        = $row[0] ?? null;
+        $jam_mulai   = $row[1] ?? null;
+        $jam_selesai = $row[2] ?? null;
+        $nama_mapel  = $row[3] ?? null;
+        $nama_guru   = $row[4] ?? null;
+        $nama_kelas  = $row[5] ?? null;
+        $ruangan     = $row[6] ?? null;
+
+        if (!$hari || !$nama_mapel || !$nama_guru || !$nama_kelas) {
+            $skipped++;
+            continue;
+        }
+
+        $subject = Subject::where('nama_mapel', $nama_mapel)->first();
+        $guru = User::where('role','guru')
+                    ->whereHas('profile', function($q) use ($nama_guru){
+                        $q->where('nama_lengkap', $nama_guru);
+                    })->first();
+        $kelas = Kelas::where('nama_kelas', $nama_kelas)->first();
+
+        if (!$subject || !$guru || !$kelas) {
+            $skipped++;
+            continue;
+        }
+
+        Schedule::create([
+            'user_id'     => $guru->id,
+            'subject_id'  => $subject->id,
+            'kelas_id'    => $kelas->id,
+            'hari'        => $hari,
+            'jam_mulai'   => $jam_mulai,
+            'jam_selesai' => $jam_selesai,
+            'ruangan'     => $ruangan,
+        ]);
+
+        $inserted++;
+    }
+
+    return back()->with('success',
+        "Import selesai. $inserted jadwal ditambahkan, $skipped dilewati."
+    );
+}
+
+public function deleteAll()
+{
+    Schedule::truncate(); // hapus semua data + reset auto increment
+
+    return redirect()
+        ->route('admin.schedules.index')
+        ->with('success', 'Semua jadwal berhasil dihapus');
+}
 }

@@ -44,42 +44,79 @@ class AttendanceController extends Controller
     }
 
 
-    public function export(Request $request)
-    {
-        $query = Attendance::with(['user.profile','kelas'])
-            ->orderBy('role')
-            ->orderBy('tanggal');
+   public function export(Request $request)
+{
+    $query = Attendance::with(['user.profile','kelas'])
+        ->orderBy('role')
+        ->orderBy('tanggal');
 
-        // Filter Bulan
-        if ($request->filled('bulan')) {
-            $query->whereMonth('tanggal', $request->bulan);
-        }
-
-        // Filter Tahun
-        if ($request->filled('tahun')) {
-            $query->whereYear('tanggal', $request->tahun);
-        }
-
-        // ✅ Tambahan Filter Role saat export juga
-        if ($request->filled('role')) {
-            $query->where('role', $request->role);
-        }
-
-        $data = $query->get();
-
-        $attendances = [
-            'guru' => $data->where('role', 'guru')
-                ->groupBy(fn ($i) => $i->tanggal->format('Y-m')),
-
-            'siswa' => $data->where('role', 'siswa')
-                ->groupBy([
-                    'kelas_id',
-                    fn ($i) => $i->tanggal->format('Y-m')
-                ]),
-        ];
-
-        $pdf = Pdf::loadView('admin.attendance.export', compact('attendances'));
-
-        return $pdf->download('rekap_absensi.pdf');
+    if ($request->filled('bulan')) {
+        $query->whereMonth('tanggal', $request->bulan);
     }
+
+    if ($request->filled('tahun')) {
+        $query->whereYear('tanggal', $request->tahun);
+    }
+
+    if ($request->filled('role')) {
+        $query->where('role', $request->role);
+    }
+
+    $data = $query->get();
+
+    // ================= REKAP GURU =================
+$rekapGuru = $data->where('role','guru')
+    ->groupBy('user_id')
+    ->map(function ($items) {
+
+        $hadir = $items->filter(function ($i) {
+            return in_array($i->status, [
+                'hadir',
+                'terlambat',
+                'pulang',
+                'pulang_dini'
+            ]);
+        })->count();
+
+        return [
+            'nama'  => $items->first()->user->profile->nama_lengkap
+                        ?? $items->first()->user->username,
+            'hadir' => $hadir,
+            'izin'  => 0,
+            'sakit' => 0,
+            'alpha' => 0,
+            'total' => $items->count(),
+        ];
+    });
+ $rekapSiswa = $data->where('role','siswa')
+    ->groupBy('kelas_id')
+    ->map(function ($kelasItems) {
+
+        return [
+            'nama_kelas' => optional($kelasItems->first()->kelas)->nama_kelas ?? '-',
+
+            'siswa' => $kelasItems->groupBy('user_id')
+                ->map(function ($items) {
+
+                    $hadir = $items->where('status','hadir')->count();
+                    $terlambat = $items->where('status','terlambat')->count();
+
+                    return [
+                        'nama'  => $items->first()->user->profile->nama_lengkap
+                                    ?? $items->first()->user->username,
+                        'hadir' => $hadir,
+                        'terlambat' => $terlambat,
+                        'total' => $items->count(),
+                    ];
+                })
+        ];
+    });  $pdf = Pdf::loadView('admin.attendance.export', [
+        'rekapGuru' => $rekapGuru,
+        'rekapSiswa' => $rekapSiswa,
+        'bulan' => $request->bulan,
+        'tahun' => $request->tahun,
+    ]);
+
+    return $pdf->download('rekap_absensi.pdf');
+}
 }

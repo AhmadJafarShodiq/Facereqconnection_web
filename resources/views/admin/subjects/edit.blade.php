@@ -17,17 +17,7 @@
                        class="form-control" required>
             </div>
 
-            <div class="mb-3">
-                <label>Kelas</label>
-                <select name="kelas_id" class="form-select" required>
-                    @foreach($kelas as $k)
-                        <option value="{{ $k->id }}"
-                            {{ $subject->kelas_id == $k->id ? 'selected' : '' }}>
-                            {{ $k->nama_kelas }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+           <input type="hidden" name="kelas_id" value="{{ $subject->kelas_id }}">
 
             <button class="btn btn-warning">Update</button>
             <a href="{{ route('admin.subjects.index') }}"

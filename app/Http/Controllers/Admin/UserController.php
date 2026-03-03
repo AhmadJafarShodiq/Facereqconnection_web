@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class UserController extends Controller
 {
@@ -23,7 +24,7 @@ class UserController extends Controller
         ->when($role, function ($query) use ($role) {
             $query->where('role', $role);
         })
-        ->orderBy('id','desc')
+        ->orderBy('id','asc')
         ->paginate(10)
         ->withQueryString();
 
@@ -96,56 +97,113 @@ class UserController extends Controller
 
     return back()->with('success','Status user diubah');
 }
+
 public function import(Request $request)
 {
     $request->validate([
-        'file' => 'required|mimes:csv,txt'
+        'file' => 'required|mimes:xlsx,xls'
     ]);
 
-    $path = $request->file('file')->getRealPath();
-    $file = fopen($path, 'r');
-
-    $header = fgetcsv($file);
+    $file = $request->file('file');
+    $spreadsheet = IOFactory::load($file->getRealPath());
+    $sheet = $spreadsheet->getActiveSheet();
+    $rows = $sheet->toArray();
 
     $inserted = 0;
     $skipped  = 0;
 
-    while ($row = fgetcsv($file)) {
-        $data = array_combine($header, $row);
+    foreach ($rows as $index => $row) {
 
-        // skip duplicate username
-        if(User::where('username', $data['username'])->exists()){
+        if ($index == 0) continue; // skip header
+
+        $username       = trim($row[0] ?? '');
+        $role           = trim($row[1] ?? '');
+        $password       = trim($row[2] ?? '123456');
+        $nama_lengkap   = trim($row[3] ?? '');
+        $nip_nis        = trim($row[4] ?? '');
+        $kelas_id       = $row[5] ?? null;
+        $jabatan_kelas  = trim($row[6] ?? '');
+
+        if (!$username || !$role) {
             $skipped++;
             continue;
         }
 
-        // buat user
+        if (!in_array($role, ['admin','guru','siswa'])) {
+            $skipped++;
+            continue;
+        }
+
+        if (User::where('username', $username)->exists()) {
+            $skipped++;
+            continue;
+        }
+
         $user = User::create([
-            'username' => $data['username'],
-            'password' => isset($data['password']) && $data['password'] != '' ? Hash::make($data['password']) : Hash::make('123456'),
-            'role'     => $data['role'],
-            'is_active'=> 1
+            'username'  => $username,
+            'password'  => Hash::make($password ?: '123456'),
+            'role'      => $role,
+            'is_active' => 1
         ]);
 
-        // buat profile termasuk jabatan
-      $user->profile()->create([
-    'nama_lengkap' => $data['nama_lengkap'] ?? null,
-    'nip_nis'      => $data['nip_nis'] ?? null,
-    'instansi'     => $data['instansi'] ?? null,
-    'kelas_id'     => !empty($data['kelas_id']) ? $data['kelas_id'] : null,
-    'jabatan_kelas'      => $data[''] ?? null,
-]);
-
+        $user->profile()->create([
+            'nama_lengkap'  => $nama_lengkap ?: null,
+            'nip_nis'       => $nip_nis ?: null,
+            'kelas_id'      => $kelas_id ?: null,
+            'jabatan_kelas' => $jabatan_kelas ?: null,
+        ]);
 
         $inserted++;
     }
 
-    fclose($file);
-
     return redirect()->route('admin.users.index')
-        ->with('success', "Import selesai. $inserted user ditambahkan, $skipped user dilewati karena username sudah ada.");
+        ->with('success', "Import selesai. $inserted user ditambahkan, $skipped dilewati.");
 }
 
 
+
+
+public function export()
+{
+    $filename = "users_" . date('Ymd_His') . ".csv";
+
+    $headers = [
+        "Content-Type" => "text/csv",
+        "Content-Disposition" => "attachment; filename=$filename",
+    ];
+
+    $users = User::with('profile.kelas')->orderBy('id','asc')->get();
+
+    $callback = function() use ($users) {
+        $file = fopen('php://output', 'w');
+
+        // Header kolom
+        fputcsv($file, [
+            'ID',
+            'Username',
+            'Role',
+            'Nama Lengkap',
+            'NIP/NIS',
+            'Kelas',
+            'Status'
+        ]);
+
+        foreach ($users as $user) {
+            fputcsv($file, [
+                $user->id,
+                $user->username,
+                $user->role,
+                optional($user->profile)->nama_lengkap,
+                optional($user->profile)->nip_nis,
+                optional(optional($user->profile)->kelas)->nama,
+                $user->is_active ? 'Aktif' : 'Nonaktif'
+            ]);
+        }
+
+        fclose($file);
+    };
+
+    return response()->stream($callback, 200, $headers);
+}
 
 }

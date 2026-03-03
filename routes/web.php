@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\UserController;
@@ -28,7 +27,11 @@ Route::middleware(['auth','admin'])
 
      Route::resource('schedules', ScheduleController::class)
             ->only(['index','create','store','edit','update']);
-
+            Route::post('schedules/import', [ScheduleController::class, 'import'])
+    ->name('schedules.import');
+  Route::delete('schedules/delete-all', 
+    [ScheduleController::class, 'deleteAll']
+)->name('schedules.deleteAll');
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
@@ -41,7 +44,9 @@ Route::middleware(['auth','admin'])
     Route::resource('users', UserController::class)->except(['destroy']);
     Route::post('users/{user}/toggle', [UserController::class, 'toggle'])
     ->name('users.toggle');
-Route::post('users/import', [UserController::class, 'import'])->name('users.import');
+    Route::post('users/import', [UserController::class, 'import'])->name('users.import');
+    Route::get('users/export', [UserController::class, 'export'])
+    ->name('users.export');
   
     // Profile
     Route::resource('profiles', ProfileController::class);

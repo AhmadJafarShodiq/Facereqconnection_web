@@ -20,7 +20,35 @@
                 <i class="bi bi-plus"></i> Tambah Jadwal
             </a>
         </div>
+        
+        <form action="{{ route('admin.schedules.deleteAll') }}" 
+      method="POST" 
+      onsubmit="return confirm('Yakin ingin menghapus SEMUA jadwal?')">
+    @csrf
+    @method('DELETE')
 
+    {{-- <button type="submit" class="btn btn-danger">
+        🗑 Hapus Semua Jadwal
+    </button> --}}
+</form>
+
+        <form action="{{ route('admin.schedules.import') }}"
+      method="POST"
+      enctype="multipart/form-data"
+      class="mb-3">
+    @csrf
+    <div class="d-flex gap-2">
+        <input type="file"
+               name="file"
+               class="form-control form-control-sm"
+               accept=".xlsx,.xls"
+               required>
+
+        <button class="btn btn-success btn-sm">
+            Import Excel
+        </button>
+    </div>
+</form>
         @if(session('success'))
             <div class="alert alert-success">{{ session('success') }}</div>
         @endif

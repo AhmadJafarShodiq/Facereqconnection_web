@@ -25,7 +25,7 @@ class ProfileController extends Controller
                       $q->where('username', 'like', "%$search%");
                   });
         })
-        ->orderBy('id','desc')
+        ->orderBy('id','asc')
         ->paginate(10)
         ->withQueryString();
 

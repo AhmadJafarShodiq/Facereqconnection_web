@@ -38,9 +38,7 @@
     </a>
 </div>
 
-    <a href="{{ route('admin.users.create') }}" class="btn btn-success btn-sm">
-        <i class="bi bi-plus"></i> Tambah
-    </a>
+    
 </div>
 
         @if(session('success'))

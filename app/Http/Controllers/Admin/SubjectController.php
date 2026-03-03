@@ -23,19 +23,20 @@ class SubjectController extends Controller
         return view('admin.subjects.index', compact('subjects','search'));
     }
 
-    public function create()
-    {
-        return view('admin.subjects.create', [
-            'kelas' => Kelas::all()
-        ]);
-    }
+   public function create()
+{
+    return view('admin.subjects.create', [
+        'kelas' => Kelas::all()
+    ]);
+}
 
     public function store(Request $request)
     {
         $data = $request->validate([
-            'nama_mapel' => 'required|string',
-            'kelas_id'   => 'required|exists:classes,id',
-        ]);
+    'nama_mapel' => 'required|string',
+]);
+
+$data['kelas_id'] = Kelas::first()->id; // otomatis ambil kelas pertama
 
         Subject::create($data);
 
@@ -55,9 +56,10 @@ class SubjectController extends Controller
     public function update(Request $request, Subject $subject)
     {
         $data = $request->validate([
-            'nama_mapel' => 'required|string',
-            'kelas_id'   => 'required|exists:classes,id',
-        ]);
+    'nama_mapel' => 'required|string',
+]);
+
+// tidak ubah kelas_id saat update
 
         $subject->update($data);
 

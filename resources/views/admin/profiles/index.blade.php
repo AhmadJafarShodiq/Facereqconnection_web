@@ -56,6 +56,7 @@
                     <table class="table table-bordered table-hover align-middle">
                         <thead class="table-light">
                             <tr>
+                                <th>Username</th>
                                 <th>Nama</th>
                                 <th>NIP/NIS</th>
                                 <th>Jabatan</th>
@@ -67,6 +68,7 @@
                         <tbody>
                             @forelse($profiles as $profile)
                                 <tr>
+                                    <td>{{ $profile->user->username ?? '-' }}</td>
                                     <td>{{ $profile->nama_lengkap }}</td>
                                     <td>{{ $profile->nip_nis }}</td>
                                     <td>{{ $profile->jabatan_kelas }}</td>
