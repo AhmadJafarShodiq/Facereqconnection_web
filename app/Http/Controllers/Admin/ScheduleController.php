@@ -144,7 +144,6 @@ class ScheduleController extends Controller
             ->with('success','Jadwal berhasil diupdate');
     }
 
-
 public function import(Request $request)
 {
     $request->validate([
@@ -159,17 +158,18 @@ public function import(Request $request)
 
     foreach ($rows as $index => $row) {
 
-        if ($index == 0) continue;
+        if ($index == 0) continue; // lewati header
 
         $hari        = $row[0] ?? null;
-        $jam_mulai   = $row[1] ?? null;
-        $jam_selesai = $row[2] ?? null;
+        $jam_mulai   = isset($row[1]) ? date('H:i:s', strtotime($row[1])) : null;
+        $jam_selesai = isset($row[2]) ? date('H:i:s', strtotime($row[2])) : null;
         $nama_mapel  = $row[3] ?? null;
         $nama_guru   = $row[4] ?? null;
         $nama_kelas  = $row[5] ?? null;
         $ruangan     = $row[6] ?? null;
 
-        if (!$hari || !$nama_mapel || !$nama_guru || !$nama_kelas) {
+        // validasi data wajib
+        if (!$hari || !$nama_mapel || !$nama_guru || !$nama_kelas || !$jam_mulai || !$jam_selesai) {
             $skipped++;
             continue;
         }
@@ -186,6 +186,7 @@ public function import(Request $request)
             continue;
         }
 
+        // simpan jadwal
         Schedule::create([
             'user_id'     => $guru->id,
             'subject_id'  => $subject->id,
@@ -203,7 +204,6 @@ public function import(Request $request)
         "Import selesai. $inserted jadwal ditambahkan, $skipped dilewati."
     );
 }
-
 public function deleteAll()
 {
     Schedule::truncate(); // hapus semua data + reset auto increment

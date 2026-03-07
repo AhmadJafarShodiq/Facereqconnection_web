@@ -17,11 +17,24 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        $user = User::where('username', $request->username)
-                    ->where('is_active', 1)
-                    ->first();
+        $user = User::where('username', $request->username)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (!$user){
+            return response()->json([
+                'status' => false,
+                'message' => 'Username atau password salah'
+            ], 401);
+        }
+
+        if(!$user->is_active){
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Akun dinonaktifkan, hubungi admin'
+                ], 403);
+            }
+        
+
+        if (!Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => false,
                 'message' => 'Username atau password salah'

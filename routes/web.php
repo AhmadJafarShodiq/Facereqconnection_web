@@ -9,7 +9,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ClassController;
 use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\Admin\SubjectController;
-
+use App\Http\Controllers\Admin\SchoolController;
 
 
 Route::get('/', fn() => redirect('/admin/login'));
@@ -41,12 +41,11 @@ Route::middleware(['auth','admin'])
             ->only(['index','create','store','edit','update']);
  
     // Master User
-    Route::resource('users', UserController::class)->except(['destroy']);
-    Route::post('users/{user}/toggle', [UserController::class, 'toggle'])
-    ->name('users.toggle');
+    Route::get('users/template', [UserController::class, 'downloadTemplate'])->name('users.template');
     Route::post('users/import', [UserController::class, 'import'])->name('users.import');
-    Route::get('users/export', [UserController::class, 'export'])
-    ->name('users.export');
+    Route::get('users/export', [UserController::class, 'export'])->name('users.export');
+    Route::resource('users', UserController::class)->except(['destroy']);
+    Route::post('users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
   
     // Profile
     Route::resource('profiles', ProfileController::class);
@@ -63,4 +62,7 @@ Route::middleware(['auth','admin'])
     Route::get('attendance', [AttendanceController::class, 'index'])->name('attendance.index');
     Route::get('attendance/{attendance}', [AttendanceController::class, 'show'])->name('attendance.show');
 
+    // School Settings
+    Route::get('school', [SchoolController::class, 'index'])->name('school.index');
+    Route::post('school', [SchoolController::class, 'update'])->name('school.update');
 });

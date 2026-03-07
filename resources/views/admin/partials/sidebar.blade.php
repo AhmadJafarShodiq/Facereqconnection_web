@@ -1,9 +1,12 @@
 <aside class="app-sidebar sidebar-yayasan shadow">
 
     {{-- BRAND --}}
-    <div class="sidebar-brand">
-        <a href="{{ route('admin.dashboard') }}" class="brand-link">
-            <span class="brand-text fw-semibold">ADMIN SMK 1 Tamanan</span>
+    <div class="sidebar-brand d-flex align-items-center px-4 py-4">
+        <a href="{{ route('admin.dashboard') }}" class="text-decoration-none d-flex align-items-center">
+            <div class="bg-primary rounded-3 p-2 me-2 shadow-sm d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                <i class="bi bi-fingerprint text-white"></i>
+            </div>
+            <span class="brand-text fw-bold text-dark" style="letter-spacing: 0.5px; font-size: 0.9rem;">SMK 1 TAMANAN</span>
         </a>
     </div>
 
@@ -82,6 +85,15 @@
                        class="nav-link {{ request()->routeIs('admin.attendance.*') ? 'active' : '' }}">
                         <i class="nav-icon bi bi-calendar-check"></i>
                         <p>Attendance</p>
+                    </a>
+                </li>
+
+                {{-- SETTINGS --}}
+                <li class="nav-item">
+                    <a href="{{ route('admin.school.index') }}"
+                       class="nav-link {{ request()->routeIs('admin.school.*') ? 'active' : '' }}">
+                        <i class="nav-icon bi bi-gear"></i>
+                        <p>Pengaturan</p>
                     </a>
                 </li>
 

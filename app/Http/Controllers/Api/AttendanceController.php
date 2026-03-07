@@ -53,9 +53,32 @@ class AttendanceController extends Controller
         ? $request->file('foto')->store('absensi', 'public')
         : null;
 
-   $schedule = Schedule::find($request->schedule_id); // <- ini baru
-$now = now();
+  $schedule = Schedule::find($request->schedule_id); 
+
+// ===== CEK JARAK DARI DATABASE =====
+    $school = \App\Models\School::first();
+    $latSekolah = $school->latitude ?? -8.02169;
+    $lonSekolah = $school->longitude ?? 113.81611;
+    $radiusSekolah = $school->radius ?? 200;
+    
+    $jarak = $this->distance(
+        $request->latitude,
+        $request->longitude,
+        $latSekolah,
+        $lonSekolah
+    );
+
+    if ($jarak > $radiusSekolah) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Anda berada di luar area sekolah (maks '.$radiusSekolah.' meter)'
+        ], 403);
+    }
+
+    $now = now();
+
 $status = $now->gt(Carbon::parse($schedule->jam_mulai)) ? 'terlambat' : 'hadir';
+
 Attendance::create([
     'user_id' => $user->id,
     'role' => 'siswa',
@@ -63,7 +86,7 @@ Attendance::create([
     'jam_masuk' => now(),
     'attendance_session_id' => $session->id,
     'schedule_id' => $request->schedule_id,
-    'subject_id' => $schedule->subject_id, // <- ini tambahan
+    'subject_id' => $schedule->subject_id,
     'kelas_id' => $user->profile->kelas_id,
     'latitude' => $request->latitude,
     'longitude' => $request->longitude,
@@ -99,10 +122,18 @@ Attendance::create([
     if (Attendance::where('user_id', $user->id)->where('tanggal', $today)->exists())
         return response()->json(['status' => false, 'message' => 'Sudah presensi'], 409);
 
-    // ===== JAM SEKOLAH =====
-    $jamMasukSekolah  = Carbon::parse('08:00'); // jam mulai sekolah
-    $now = now();
-    $status = $now->gt($jamMasukSekolah) ? 'terlambat' : 'hadir';
+    $jamMasukSekolah  = Carbon::parse('07:00'); 
+$batasAbsen = Carbon::parse('19:00');
+$now = now();
+
+if ($now->gt($batasAbsen)) {
+    return response()->json([
+        'status' => false,
+        'message' => 'Batas absensi sudah lewat'
+    ], 403);
+}
+
+$status = $now->gt($jamMasukSekolah) ? 'terlambat' : 'hadir';
 
     $attendance = Attendance::create([
         'user_id' => $user->id,
@@ -129,8 +160,7 @@ public function teacherCheckOut(Request $request)
     if (!$attendance || $attendance->jam_pulang)
         return response()->json(['status' => false], 409);
 
-    // ===== JAM SEKOLAH =====
-    $jamPulangSekolah = Carbon::parse('16:00'); // jam selesai sekolah
+   $jamPulangSekolah = Carbon::parse('15:00'); // jam pulang normal
     $now = now();
     $status = $now->lt($jamPulangSekolah) ? 'pulang_dini' : 'pulang';
 
@@ -234,18 +264,43 @@ public function today(Request $request)
     {
         $today = now()->toDateString();
 
-        $data = Attendance::with('user.profile')
+        // 1. Ambil data siswa yang SUDAH ABSEN
+        $present = Attendance::with('user.profile')
             ->where('subject_id', $subjectId)
             ->where('kelas_id', $classId)
             ->where('tanggal', $today)
             ->get()
             ->map(fn($a) => [
                 'nama' => $a->user->profile->nama_lengkap ?? '-',
+                'nis' => $a->user->profile->nip_nis ?? '-',
                 'jam' => $a->jam_masuk?->format('H:i'),
                 'status' => $a->status
             ]);
 
-        return response()->json(['status' => true, 'data' => $data]);
+        $presentUserIds = Attendance::where('subject_id', $subjectId)
+            ->where('kelas_id', $classId)
+            ->where('tanggal', $today)
+            ->pluck('user_id')
+            ->toArray();
+
+        // 2. Ambil data siswa yang BELUM ABSEN (role siswa aktif di kelas ini)
+        $missing = \App\Models\Profile::where('kelas_id', $classId)
+            ->whereHas('user', function($q) {
+                $q->where('role', 'siswa')->where('is_active', 1);
+            })
+            ->whereNotIn('user_id', $presentUserIds)
+            ->get()
+            ->map(fn($p) => [
+                'nama' => $p->nama_lengkap ?? '-',
+                'nis' => $p->nip_nis ?? '-',
+                'status' => 'Belum Absen'
+            ]);
+
+        return response()->json([
+            'status' => true,
+            'present' => $present,
+            'missing' => $missing
+        ]);
     }
 
 

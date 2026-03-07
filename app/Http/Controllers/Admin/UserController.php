@@ -105,43 +105,59 @@ public function import(Request $request)
     ]);
 
     $file = $request->file('file');
-    $spreadsheet = IOFactory::load($file->getRealPath());
+    $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getRealPath());
     $sheet = $spreadsheet->getActiveSheet();
     $rows = $sheet->toArray();
 
     $inserted = 0;
     $skipped  = 0;
+    $errors   = [];
 
     foreach ($rows as $index => $row) {
-
         if ($index == 0) continue; // skip header
+        
+        // Skip truly empty rows
+        if (empty(array_filter($row))) continue;
 
         $username       = trim($row[0] ?? '');
-        $role           = trim($row[1] ?? '');
+        $role           = strtolower(trim($row[1] ?? ''));
         $password       = trim($row[2] ?? '123456');
         $nama_lengkap   = trim($row[3] ?? '');
         $nip_nis        = trim($row[4] ?? '');
-        $kelas_id       = $row[5] ?? null;
-        $jabatan_kelas  = trim($row[6] ?? '');
+        $instansi       = trim($row[5] ?? '');
+        $kelas_id       = $row[6] ?? null;
+        $jabatan_kelas  = trim($row[7] ?? '');
 
+        // Validasi dasar
         if (!$username || !$role) {
             $skipped++;
+            $errors[] = "Baris " . ($index + 1) . ": Username atau Role kosong";
             continue;
         }
 
         if (!in_array($role, ['admin','guru','siswa'])) {
             $skipped++;
+            $errors[] = "Baris " . ($index + 1) . ": Role '$role' tidak valid (harus admin/guru/siswa)";
             continue;
         }
 
-        if (User::where('username', $username)->exists()) {
+        // Cek username sudah ada
+        if (\App\Models\User::where('username', $username)->exists()) {
             $skipped++;
+            $errors[] = "Baris " . ($index + 1) . ": Username '$username' sudah terdaftar";
             continue;
         }
 
-        $user = User::create([
+        // Hanya cek kelas kalau role siswa dan kelas_id ada
+        if ($role === 'siswa' && $kelas_id && !DB::table('classes')->where('id', $kelas_id)->exists()) {
+            $skipped++;
+            $errors[] = "Baris " . ($index + 1) . ": ID Kelas '$kelas_id' tidak ditemukan";
+            continue;
+        }
+
+        $user = \App\Models\User::create([
             'username'  => $username,
-            'password'  => Hash::make($password ?: '123456'),
+            'password'  => \Illuminate\Support\Facades\Hash::make($password ?: '123456'),
             'role'      => $role,
             'is_active' => 1
         ]);
@@ -149,6 +165,7 @@ public function import(Request $request)
         $user->profile()->create([
             'nama_lengkap'  => $nama_lengkap ?: null,
             'nip_nis'       => $nip_nis ?: null,
+            'instansi'      => $instansi ?: null,
             'kelas_id'      => $kelas_id ?: null,
             'jabatan_kelas' => $jabatan_kelas ?: null,
         ]);
@@ -156,54 +173,49 @@ public function import(Request $request)
         $inserted++;
     }
 
-    return redirect()->route('admin.users.index')
-        ->with('success', "Import selesai. $inserted user ditambahkan, $skipped dilewati.");
+    $msg = "Import selesai. $inserted user ditambahkan, $skipped dilewati.";
+    if (!empty($errors)) {
+        session()->flash('import_errors', array_slice($errors, 0, 10)); // limit 10 errors to avoid session bloat
+    }
+
+    return redirect()->route('admin.users.index')->with('success', $msg);
 }
 
-
-
-
-public function export()
+public function downloadTemplate()
 {
-    $filename = "users_" . date('Ymd_His') . ".csv";
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
 
-    $headers = [
-        "Content-Type" => "text/csv",
-        "Content-Disposition" => "attachment; filename=$filename",
+    // Header
+    $headers = ['username', 'role', 'password', 'nama_lengkap', 'nip_nis', 'instansi', 'kelas_id', 'jabatan_kelas'];
+    foreach ($headers as $key => $header) {
+        $sheet->setCellValue([$key + 1, 1], $header);
+    }
+
+    // Contoh Data
+    $exampleData = [
+        ['budi123', 'siswa', '123456', 'Budi Santoso', '1001', 'SMK N 1', '1', 'Ketua Kelas'],
+        ['ani_guru', 'guru', '123456', 'Ani Wijaya', '198812...', 'SMK N 1', '', 'Guru Mapel'],
     ];
 
-    $users = User::with('profile.kelas')->orderBy('id','asc')->get();
-
-    $callback = function() use ($users) {
-        $file = fopen('php://output', 'w');
-
-        // Header kolom
-        fputcsv($file, [
-            'ID',
-            'Username',
-            'Role',
-            'Nama Lengkap',
-            'NIP/NIS',
-            'Kelas',
-            'Status'
-        ]);
-
-        foreach ($users as $user) {
-            fputcsv($file, [
-                $user->id,
-                $user->username,
-                $user->role,
-                optional($user->profile)->nama_lengkap,
-                optional($user->profile)->nip_nis,
-                optional(optional($user->profile)->kelas)->nama,
-                $user->is_active ? 'Aktif' : 'Nonaktif'
-            ]);
+    foreach ($exampleData as $rowKey => $rowData) {
+        foreach ($rowData as $colKey => $cellValue) {
+            $sheet->setCellValue([$colKey + 1, $rowKey + 2], $cellValue);
         }
+    }
 
-        fclose($file);
-    };
+    // Auto size columns
+    foreach (range('A', 'H') as $columnID) {
+        $sheet->getColumnDimension($columnID)->setAutoSize(true);
+    }
 
-    return response()->stream($callback, 200, $headers);
+    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+    
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment;filename="template_import_user.xlsx"');
+    header('Cache-Control: max-age=0');
+    
+    $writer->save('php://output');
+    exit;
 }
-
 }

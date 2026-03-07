@@ -124,12 +124,17 @@ class ScheduleController extends Controller
 
         $schedules = $query->orderBy('jam_mulai')->get()->map(function ($s) use ($user) {
 
-            // 🔥 FIX: HAPUS whereDate(created_at)
+            // 🔥 CEK SESI AKTIF & EXPIRED
             $session = AttendanceSession::where('schedule_id', $s->id)
                 ->where('kelas_id', $s->kelas_id)
                 ->where('subject_id', $s->subject_id)
                 ->where('is_active', 1)
                 ->first();
+
+            if ($session && $session->ended_at && $session->ended_at->isPast()) {
+                $session->update(['is_active' => 0]);
+                $session = null;
+            }
 
             $item = [
                 'id' => $s->id,
@@ -141,10 +146,23 @@ class ScheduleController extends Controller
                 'ruangan' => $s->ruangan,
                 'session_open' => $session !== null,
                 'session_id' => $session?->id,
+                'remaining_seconds' => $session && $session->ended_at ? now()->diffInSeconds($session->ended_at, false) : null,
             ];
 
             if ($user->role === 'guru') {
                 $item['kelas'] = $s->kelas->nama_kelas ?? '-';
+                $item['class_id'] = $s->kelas_id;
+                
+                // 🔥 TAMBAH STATISTIK SISWA (Filter Hanya Siswa Aktif di Kelas Ini)
+                $item['total_students'] = $s->kelas_id 
+                    ? \App\Models\Profile::where('kelas_id', $s->kelas_id)
+                        ->whereHas('user', function($q) {
+                            $q->where('role', 'siswa')->where('is_active', 1);
+                        })->count()
+                    : 0;
+                $item['present_count'] = $session 
+                    ? Attendance::where('attendance_session_id', $session->id)->count()
+                    : 0;
             }
 
             if ($user->role === 'siswa') {

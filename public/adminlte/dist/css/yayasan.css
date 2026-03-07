@@ -1,406 +1,286 @@
-.app-sidebar.sidebar-yayasan {
-  background: linear-gradient(
-    180deg,
-    #3b82f6 0%,
-    #2563eb 50%,
-    #1e40af 100%
-  ) !important;
+/* ================= GLOBAL MODERNIZATION ================= */
+:root {
+    --primary-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    --success-gradient: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+    --warning-gradient: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    --danger-gradient: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+    --info-gradient: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.3);
 }
 
-.app-main,
-.app-content {
-    background-color: #ffffff !important;
+body {
+    font-family: 'Source Sans 3', sans-serif !important;
+    background-color: #f8fafc !important;
+    color: #334155;
 }
 
-.sidebar-yayasan .sidebar-brand {
-  padding: 1rem !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+.card {
+    border: none !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.sidebar-yayasan .brand-text {
-  color: #ffffff !important;
-  font-weight: 600;
-  font-size: 1.05rem;
+.card:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
 }
 
-.sidebar-yayasan .brand-image {
-  background: #ffffff;
-  border-radius: 50%;
-  padding: 3px;
+.card-header {
+    background-color: transparent !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    padding: 1.25rem 1.5rem !important;
 }
 
-/* ================= MENU UTAMA ================= */
+.card-title {
+    font-weight: 700 !important;
+    color: #1e293b !important;
+}
 
-.sidebar-yayasan .nav-item {
-  margin: 4px 8px !important;
+/* ================= TABLES ================= */
+.table {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 8px !important;
+    table-layout: auto;
+}
+
+.table thead th {
+    background-color: #f8fafc !important;
+    border: none !important;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    padding: 1rem !important;
+}
+
+.table tbody tr {
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: #f1f5f9 !important;
+    transform: scale(1.005);
+}
+
+.table tbody td {
+    border: none !important;
+    padding: 1rem !important;
+}
+
+.table tbody tr td:first-child {
+    border-top-left-radius: 12px;
+    border-bottom-left-radius: 12px;
+}
+
+.table tbody tr td:last-child {
+    border-top-right-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+/* ================= BADGES ================= */
+.badge {
+    padding: 0.5em 0.8em !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+}
+
+/* ================= BUTTONS ================= */
+.btn {
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    padding: 0.5rem 1rem !important;
+    transition: all 0.2s ease !important;
+}
+
+.btn-primary {
+    background: var(--primary-gradient) !important;
+    border: none !important;
+}
+
+.btn-success {
+    background: var(--success-gradient) !important;
+    border: none !important;
+}
+
+/* ================= SIDEBAR & NAVBAR ================= */
+.app-sidebar {
+    background: #ffffff !important;
+    border-right: 1px solid #eef2f6 !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05) !important;
+}
+
+.sidebar-brand {
+    background: #ffffff !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    color: #1e293b !important;
+    padding: 1.5rem !important;
+    font-weight: 800 !important;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .sidebar-yayasan .nav-link {
-  display: flex !important;
-  align-items: center !important;
-  gap: 10px;
-  color: #e0f2fe !important; /* light blue text */
-  border-radius: 12px !important;
-  padding: 10px 14px !important;
-  font-weight: 500;
-  transition: all 0.25s ease;
+    border-radius: 12px !important;
+    margin: 4px 16px !important;
+    color: #64748b !important;
+    font-weight: 500 !important;
+    padding: 0.75rem 1rem !important;
 }
 
-.sidebar-yayasan .nav-link p {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  margin: 0;
-}
-
-.sidebar-yayasan .nav-link:hover {
-  background: rgba(255, 255, 255, 0.15) !important;
-  transform: translateX(4px);
-  color: #ffffff !important;
+.sidebar-yayasan .nav-link i {
+    font-size: 1.1rem;
+    margin-right: 12px;
 }
 
 .sidebar-yayasan .nav-link.active {
-  background: rgba(255, 255, 255, 0.25) !important;
-  font-weight: 600;
+    background: #4f46e5 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3) !important;
 }
 
-.sidebar-yayasan .nav-icon,
-.sidebar-yayasan .nav-icon img {
-  filter: brightness(0) invert(1);
-  width: 18px;
-  height: 18px;
+.sidebar-yayasan .nav-link:hover:not(.active) {
+    background: #f1f5f9 !important;
+    color: #4f46e5 !important;
 }
 
-.sidebar-yayasan .nav-arrow {
-  color: rgba(255, 255, 255, 0.65) !important;
-  transition: transform 0.3s ease;
+.app-navbar {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid #f1f5f9 !important;
 }
 
-.sidebar-yayasan .menu-open > .nav-link .nav-arrow {
-  transform: rotate(90deg);
-}
-
-.sidebar-yayasan .nav-treeview {
-  padding-left: 14px !important;
-  margin-top: 6px;
-}
-
-.sidebar-yayasan .nav-treeview .nav-link {
-  padding: 8px 14px 8px 38px !important;
-  font-size: 0.88rem;
-  border-radius: 10px !important;
-}
-
-.sidebar-yayasan .nav-treeview .nav-icon {
-  font-size: 0.45rem;
-  color: #bfdbfe !important; /* light blue icon */
-}
-
-.sidebar-yayasan .nav-treeview .nav-link:hover {
-  background: rgba(255, 255, 255, 0.12) !important;
-}
-
-.sidebar-yayasan .nav-treeview .nav-link.active {
-  background: rgba(255, 255, 255, 0.22) !important;
-  font-weight: 600;
-}
-
-.sidebar-yayasan::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sidebar-yayasan::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.35);
-  border-radius: 10px;
-}
-
-.navbar-yayasan {
-  background-color: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.navbar-yayasan .nav-link {
-  color: #2563eb !important;
-  font-weight: 500;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.navbar-yayasan .nav-link:hover {
-  background: #eff6ff;
-  color: #1e40af !important;
-}
-
-.navbar-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #2563eb;
-}
-
-.navbar-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #2563eb;
-}
-
-.navbar-user-name {
-  font-weight: 500;
-  color: #2563eb;
-}
-
-.navbar-yayasan .dropdown-menu {
-  border-radius: 12px;
-  min-width: 180px;
-}
-
-.navbar-yayasan .dropdown-item {
-  font-weight: 500;
-  padding: 10px 14px;
-}
-
-.navbar-yayasan .dropdown-item:hover {
-  background-color: #eff6ff;
-}
-
-.app-header.navbar {
-  background: linear-gradient(
-    90deg,
-    #eff6ff 0%,
-    #dbeafe 40%,
-    #ffffff 100%
-  );
-  border-bottom: 1px solid #bfdbfe;
-}
-
-.app-header .nav-link {
-  color: #2563eb !important;
-  font-weight: 500;
-  border-radius: 10px;
-  padding: 8px 12px;
-  transition: all 0.2s ease;
-}
-
-.app-header .nav-link:hover {
-  background-color: #dbeafe;
-  color: #1e40af !important;
-}
-
-.app-header .nav-link i {
-  color: #1e40af;
-}
-
-.app-header .navbar-badge {
-  font-size: 0.65rem;
-}
-
-.app-header .user-menu .user-image {
-  border: 2px solid #2563eb;
-}
-
-.app-header .dropdown-menu {
-  border-radius: 14px;
-  border: 1px solid #bfdbfe;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
-}
-
-.app-header .user-header {
-  background: linear-gradient(
-    135deg,
-    #3b82f6,
-    #2563eb
-  ) !important;
-}
-
-.app-header .dropdown-menu a {
-  color: #2563eb;
-  font-weight: 500;
-}
-
-.app-header .dropdown-menu a:hover {
-  background-color: #eff6ff;
-}
-
-.app-header .user-footer .btn {
-  border-radius: 8px;
-}
-
-.app-header {
-  position: relative;
-  z-index: 1030;
-}
-
-/* ================= DASHBOARD CARDS ================= */
-
-.dashboard-card {
-  border-radius: 18px !important;
-  color: #ffffff;
-  padding: 20px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-  transition: all 0.25s ease;
-}
-
-.dashboard-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.12);
-}
-
-.dashboard-card h3 {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.dashboard-card p {
-  margin: 0;
-  opacity: 0.9;
-  font-weight: 500;
-}
-
-.card-blue {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-}
-
-.card-green {
-  background: linear-gradient(135deg, #10b981, #059669);
-}
-
-.card-yellow {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-}
-
-.card-red {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-}
-
-/* ================= TABLE STYLE ================= */
-
-.dashboard-box {
-  background: #ffffff;
-  border-radius: 18px;
-  padding: 20px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
-}
-
-.dashboard-box h5 {
-  font-weight: 600;
-  margin-bottom: 16px;
-}
-
-.table-dashboard thead {
-  background-color: #f1f5f9;
-}
-
-.table-dashboard th {
-  font-weight: 600;
-  color: #334155;
-}
-
-.table-dashboard td {
-  vertical-align: middle;
-}
-
-.table-dashboard tr:hover {
-  background-color: #f8fafc;
-}
-/* FORCE OVERRIDE ADMINLTE SMALL BOX */
-
-.app-content .small-box {
-  border-radius: 20px !important;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12) !important;
-  overflow: hidden;
-  transition: all 0.3s ease !important;
-}
-
-.app-content .small-box:hover {
-  transform: translateY(-6px) !important;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18) !important;
-}
-
-.app-content .small-box .icon {
-  font-size: 70px !important;
-  opacity: 0.2 !important;
-  top: 15px !important;
-}
-/* ================= MODERN STAT CARD ================= */
-
+/* ================= STAT CARDS ================= */
 .stat-card {
-  border-radius: 20px;
-  padding: 24px;
-  color: #ffffff;
-  position: relative;
-  overflow: hidden;
-  min-height: 130px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.08);
-  transition: all 0.3s ease;
+    border-radius: 20px;
+    padding: 24px;
+    color: #ffffff;
+    position: relative;
+    overflow: hidden;
+    min-height: 120px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.stat-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 45px rgba(0,0,0,0.12);
+.stat-card.bg-primary {
+    background: var(--primary-gradient) !important;
 }
 
-.stat-title {
-  font-size: 14px;
-  opacity: 0.9;
-  display: block;
-  margin-bottom: 8px;
+.stat-card.bg-success {
+    background: var(--success-gradient) !important;
+}
+
+.stat-card.bg-warning {
+    background: var(--warning-gradient) !important;
+}
+
+.stat-card.bg-danger {
+    background: var(--danger-gradient) !important;
+}
+
+.stat-card::after {
+    content: '';
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    top: -50px;
+    right: -50px;
+    transition: all 0.5s ease;
+}
+
+.stat-card:hover::after {
+    transform: scale(1.5);
 }
 
 .stat-card h2 {
-  font-size: 32px;
-  font-weight: 700;
-  margin: 0;
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -1px;
 }
 
 .stat-icon {
-  font-size: 48px;
-  opacity: 0.15;
-}
-/* ===== FIX JARAK DARI HEADER ===== */
-body {
-    overflow-x: hidden;
+    font-size: 3.5rem !important;
+    opacity: 0.2;
+    transform: rotate(-10deg);
 }
 
-.app-content .container-fluid {
-    padding-top: 15px;
+/* ================= FORMS ================= */
+.form-control,
+.form-select {
+    border-radius: 10px !important;
+    padding: 0.75rem 1rem !important;
+    border: 1px solid #e2e8f0 !important;
 }
 
-.table-responsive {
-    overflow-x: auto;
-}
-/* Paksa sidebar full tinggi layar */
-.app-sidebar {
-    height: 100vh !important;
-    position: fixed !important;
+.form-control:focus,
+.form-select:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1) !important;
 }
 
-/* Geser content supaya tidak ketiban sidebar */
-.app-main {
-    margin-left: 250px; /* sesuaikan dengan lebar sidebar */
+/* ================= UTILITIES ================= */
+.text-gradient-primary {
+    background: var(--primary-gradient);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
-/* Cegah overflow horizontal */
-body {
-    overflow-x: hidden;
-}
-/* Fix icon membesar tidak wajar */
-.app-content i {
-    font-size: inherit !important;
+.rounded-modern {
+    border-radius: 20px !important;
 }
 
-.bi {
-    font-size: 1rem !important;
+/* Use subtler shadow for cleaner look */
+.shadow-modern {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
 }
+
+/* Fix massive SVG/Pagination icons */
 svg {
-    width: 16px !important;
-    height: 16px !important;
+    max-width: 20px;
+    height: auto;
+}
+
+.pagination svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Prevent horizontal overflow and fix vertical layout */
+html,
+body {
+    overflow-x: hidden;
+    height: 100%;
+}
+
+.app-main {
+    padding-top: 1rem !important;
+    /* Fix for data being too far down */
+    background-color: #f8fafc;
+}
+
+.app-content {
+    overflow-x: hidden;
+    padding-bottom: 2rem;
+}
+
+/* Sidebar Scrollbar */
+.app-sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.app-sidebar::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
 }

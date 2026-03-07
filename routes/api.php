@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\Api\GuruAttendanceSessionController;
 use App\Http\Controllers\Api\SchoolController;
+use App\Http\Controllers\Api\ProfilController;
 
 
 /* =================================================
@@ -27,6 +28,12 @@ Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logo
 Route::middleware('auth:sanctum')->get('/me', function (Request $request) {
     return $request->user()->load('profile');
 });
+
+
+/* =================================================
+| PUBLIC DATA
+================================================= */
+Route::get('/school', [SchoolController::class, 'index']);
 
 
 /* =================================================
@@ -48,11 +55,17 @@ Route::middleware(['auth:sanctum', 'face.verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::get('/guru/dashboard/today', [DashboardController::class, 'guruToday']);
 
-    /* ===== SEKOLAH ===== */
-    Route::get('/school', [SchoolController::class, 'index']);
+    /* ===== SEKOLAH (Admin/Update only) ===== */
+    Route::post('/school/update', [SchoolController::class, 'update']);
 
     /* ===== SUBJECT ===== */
     Route::get('/subjects', [SubjectController::class, 'index']);
+
+    /* ===== PROFIL ===== */
+    Route::get('/profile', [ProfilController::class, 'profile']);
+    Route::post('/profile/update', [ProfilController::class, 'updateProfile']);
+    Route::post('/profile/photo', [ProfilController::class, 'updateFoto']);
+    Route::post('/profile/password', [ProfilController::class, 'changePassword']);
 
     /* ===== JADWAL ===== */
     Route::get('/schedules', [ScheduleController::class, 'studentSchedule']);

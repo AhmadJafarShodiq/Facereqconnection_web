@@ -13,11 +13,12 @@ class GuruAttendanceSessionController extends Controller
 /* =====================================================
 | BUKA SESI ABSEN (BERDASARKAN JADWAL)
 ===================================================== */
-public function open(Request $request)
-{
-    $request->validate([
-        'schedule_id' => 'required|exists:schedules,id'
-    ]);
+    public function open(Request $request)
+    {
+        $request->validate([
+            'schedule_id' => 'required|exists:schedules,id',
+            'duration' => 'nullable|integer|min:5|max:240' // menit
+        ]);
 
     $guru = $request->user();
 
@@ -49,15 +50,19 @@ public function open(Request $request)
         'ended_at'=>now()
     ]);
 
-    /* ===== BUKA SESI BARU ===== */
-    $session = AttendanceSession::create([
-        'guru_id'    => $guru->id,
-        'schedule_id'=> $schedule->id,
-        'subject_id' => $schedule->subject_id,
-        'kelas_id'   => $schedule->kelas_id,
-        'started_at'=> now(),
-        'is_active' => true
-    ]);
+        /* ===== BUKA SESI BARU ===== */
+        $startedAt = now();
+        $endedAt = $request->duration ? $startedAt->copy()->addMinutes($request->duration) : null;
+
+        $session = AttendanceSession::create([
+            'guru_id'    => $guru->id,
+            'schedule_id'=> $schedule->id,
+            'subject_id' => $schedule->subject_id,
+            'kelas_id'   => $schedule->kelas_id,
+            'started_at'=> $startedAt,
+            'ended_at'  => $endedAt,
+            'is_active' => true
+        ]);
 
     return response()->json([
         'status'=>true,

@@ -9,15 +9,22 @@ use Illuminate\Database\Eloquent\Model;
 class Profile extends Model
 {
     protected $fillable = [
-    'user_id',
-    'kelas_id',
-    'nama_lengkap',
-    'nip_nis',
-    'jabatan_kelas',
-    'instansi',
-    'foto',
-];
+        'user_id',
+        'kelas_id',
+        'nama_lengkap',
+        'nip_nis',
+        'jabatan_kelas',
+        'instansi',
+        'foto',
+    ];
 
+    protected $appends = ['foto_url'];
+
+    public function getFotoUrlAttribute()
+    {
+        if (!$this->foto) return null;
+        return url('foto_profile/' . $this->foto);
+    }
 
     public function user()
     {
