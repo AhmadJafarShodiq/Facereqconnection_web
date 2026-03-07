@@ -54,9 +54,13 @@
             </div>
           </li>
 
-          <li class="user-footer d-flex justify-content-between px-3">
-            <a href="#" class="btn btn-default btn-flat">Profile</a>
-            <form method="POST" action="{{ route('admin.logout') }}">
+          <li class="user-footer d-flex flex-column gap-2 px-3 pb-3">
+            <div class="d-flex justify-content-between">
+                <a href="{{ route('admin.my-profile.index') }}" class="btn btn-default btn-sm btn-flat">Profile</a>
+                <a href="{{ route('admin.change-password') }}" class="btn btn-default btn-sm btn-flat">Password</a>
+            </div>
+            <hr class="my-1">
+            <form method="POST" action="{{ route('admin.logout') }}" class="w-100">
               @csrf
               <button class="btn btn-default btn-flat text-danger">
                 Logout

@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\ClassController;
 use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\Admin\SubjectController;
 use App\Http\Controllers\Admin\SchoolController;
+use App\Http\Controllers\Admin\AdminProfileController;
 
 
 Route::get('/', fn() => redirect('/admin/login'));
@@ -65,4 +66,10 @@ Route::middleware(['auth','admin'])
     // School Settings
     Route::get('school', [SchoolController::class, 'index'])->name('school.index');
     Route::post('school', [SchoolController::class, 'update'])->name('school.update');
+
+    // Admin Account Settings
+    Route::get('my-profile', [AdminProfileController::class, 'index'])->name('my-profile.index');
+    Route::post('my-profile', [AdminProfileController::class, 'update'])->name('my-profile.update');
+    Route::get('change-password', [AdminProfileController::class, 'password'])->name('change-password');
+    Route::post('change-password', [AdminProfileController::class, 'updatePassword'])->name('change-password.post');
 });
