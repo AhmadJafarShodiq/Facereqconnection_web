@@ -57,7 +57,7 @@ class ProfilController extends Controller
   public function updateFoto(Request $request)
 {
     $request->validate([
-        'foto' => 'required|image|mimes:jpg,jpeg,png|max:2048'
+        'foto' => 'required|image|mimes:jpg,jpeg,png|max:10240'
     ]);
 
     $user = $request->user();

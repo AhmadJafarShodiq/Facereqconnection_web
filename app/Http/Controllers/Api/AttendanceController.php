@@ -22,7 +22,7 @@ class AttendanceController extends Controller
         'schedule_id' => 'required|exists:schedules,id',
         'latitude' => 'required|numeric',
         'longitude' => 'required|numeric',
-        'foto' => 'nullable|image'
+        'foto' => 'nullable|image|mimes:jpg,jpeg,png|max:10240'
     ]);
 
     $user = $request->user();

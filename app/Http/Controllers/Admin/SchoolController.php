@@ -22,7 +22,7 @@ class SchoolController extends Controller
             'longitude' => 'required|numeric',
             'radius' => 'required|numeric',
             'primary_color' => 'nullable|string|max:7',
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5120',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:10240',
         ]);
 
         $school = School::first() ?? new School();

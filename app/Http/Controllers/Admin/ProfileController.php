@@ -51,7 +51,7 @@ class ProfileController extends Controller
     'nip_nis' => 'required',
     'jabatan_kelas' => 'required',
     'instansi' => 'required',
-    'foto' => 'nullable|image'
+    'foto' => 'nullable|image|mimes:jpg,jpeg,png|max:10240'
 ]);
 
 
@@ -83,7 +83,7 @@ class ProfileController extends Controller
             'nip_nis' => 'required',
             'jabatan_kelas' => 'required',
             'instansi' => 'required',
-            'foto' => 'nullable|image',
+            'foto' => 'nullable|image|mimes:jpg,jpeg,png|max:10240',
             'kelas_id' => 'nullable|exists:classes,id',
 
         ]);

@@ -28,14 +28,7 @@
     </div>
 
     <div class="card-body p-0">
-        @if(session('success'))
-            <div class="px-4 pb-3">
-                <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm rounded-3" role="alert">
-                    <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            </div>
-        @endif
+
 
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">

@@ -38,6 +38,7 @@
   <main class="app-main">
     <div class="app-content">
       <div class="container-fluid">
+        @include('admin.partials.alerts')
         @yield('content')
       </div>
     </div>

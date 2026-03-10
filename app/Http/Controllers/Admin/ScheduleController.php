@@ -51,34 +51,20 @@ class ScheduleController extends Controller
             'ruangan'     => 'nullable|string'
         ]);
 
-        // ===== CEK BENTROK KELAS =====
         $kelasBentrok = Schedule::where('hari', $data['hari'])
             ->where('kelas_id', $data['kelas_id'])
-            ->where(function ($q) use ($data) {
-                $q->whereBetween('jam_mulai', [$data['jam_mulai'], $data['jam_selesai']])
-                  ->orWhereBetween('jam_selesai', [$data['jam_mulai'], $data['jam_selesai']])
-                  ->orWhere(function ($q2) use ($data) {
-                      $q2->where('jam_mulai', '<=', $data['jam_mulai'])
-                         ->where('jam_selesai', '>=', $data['jam_selesai']);
-                  });
-            })
+            ->where('jam_mulai', '<', $data['jam_selesai'])
+            ->where('jam_selesai', '>', $data['jam_mulai'])
             ->exists();
 
         if ($kelasBentrok) {
             return back()->withErrors('Jadwal bentrok dengan kelas lain')->withInput();
         }
 
-        // ===== CEK BENTROK GURU =====
         $guruBentrok = Schedule::where('hari', $data['hari'])
             ->where('user_id', $data['user_id'])
-            ->where(function ($q) use ($data) {
-                $q->whereBetween('jam_mulai', [$data['jam_mulai'], $data['jam_selesai']])
-                  ->orWhereBetween('jam_selesai', [$data['jam_mulai'], $data['jam_selesai']])
-                  ->orWhere(function ($q2) use ($data) {
-                      $q2->where('jam_mulai', '<=', $data['jam_mulai'])
-                         ->where('jam_selesai', '>=', $data['jam_selesai']);
-                  });
-            })
+            ->where('jam_mulai', '<', $data['jam_selesai'])
+            ->where('jam_selesai', '>', $data['jam_mulai'])
             ->exists();
 
         if ($guruBentrok) {
@@ -114,23 +100,14 @@ class ScheduleController extends Controller
             'ruangan'     => 'nullable|string'
         ]);
 
-        // ===== CEK BENTROK (EXCEPT ID INI) =====
-        $bentrok = Schedule::where('id','!=',$schedule->id)
+        $bentrok = Schedule::where('id', '!=', $schedule->id)
             ->where('hari', $data['hari'])
             ->where(function ($q) use ($data) {
-                $q->where(function ($q2) use ($data) {
-                    $q2->where('kelas_id', $data['kelas_id'])
-                       ->orWhere('user_id', $data['user_id']);
-                });
+                $q->where('kelas_id', $data['kelas_id'])
+                  ->orWhere('user_id', $data['user_id']);
             })
-            ->where(function ($q) use ($data) {
-                $q->whereBetween('jam_mulai', [$data['jam_mulai'], $data['jam_selesai']])
-                  ->orWhereBetween('jam_selesai', [$data['jam_mulai'], $data['jam_selesai']])
-                  ->orWhere(function ($q2) use ($data) {
-                      $q2->where('jam_mulai', '<=', $data['jam_mulai'])
-                         ->where('jam_selesai', '>=', $data['jam_selesai']);
-                  });
-            })
+            ->where('jam_mulai', '<', $data['jam_selesai'])
+            ->where('jam_selesai', '>', $data['jam_mulai'])
             ->exists();
 
         if ($bentrok) {
