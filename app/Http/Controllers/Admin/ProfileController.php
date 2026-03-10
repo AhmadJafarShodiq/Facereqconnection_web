@@ -46,7 +46,7 @@ class ProfileController extends Controller
     {
         $request->validate([
     'user_id' => 'required|unique:profiles,user_id',
-    'kelas_id' => 'nullable|exists:kelas,id',
+    'kelas_id' => 'nullable|exists:classes,id',
     'nama_lengkap' => 'required',
     'nip_nis' => 'required',
     'jabatan_kelas' => 'required',
@@ -84,7 +84,7 @@ class ProfileController extends Controller
             'jabatan_kelas' => 'required',
             'instansi' => 'required',
             'foto' => 'nullable|image',
-            'kelas_id' => 'nullable|exists:kelas,id',
+            'kelas_id' => 'nullable|exists:classes,id',
 
         ]);
 
