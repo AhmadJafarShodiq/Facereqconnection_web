@@ -29,21 +29,28 @@
 
     <div class="card-body p-4 pt-0">
         <div class="row g-3 mb-4">
-            <div class="col-md-6">
+            <div class="col-md-7">
                 <div class="p-3 bg-light rounded-3 border-dashed h-100">
-                    <h6 class="fw-bold mb-3 small text-uppercase text-muted">Import dari Excel</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold small text-uppercase text-muted mb-0">Import dari Excel</h6>
+                        <a href="{{ route('admin.schedules.template') }}" class="btn btn-link btn-sm text-decoration-none p-0">
+                            <i class="bi bi-download me-1"></i> Download Template
+                        </a>
+                    </div>
                     <form action="{{ route('admin.schedules.import') }}" method="POST" enctype="multipart/form-data" class="row g-2">
                         @csrf
                         <div class="col">
                             <input type="file" name="file" class="form-control form-control-sm border-0 shadow-sm" accept=".xlsx,.xls" required>
                         </div>
                         <div class="col-auto">
-                            <button class="btn btn-success btn-sm px-3 rounded-3">Import</button>
+                            <button class="btn btn-success btn-sm px-3 rounded-3">
+                                <i class="bi bi-cloud-arrow-up me-1"></i> Import
+                            </button>
                         </div>
                     </form>
                 </div>
             </div>
-            <div class="col-md-6 text-md-end d-flex align-items-end justify-content-md-end">
+            <div class="col-md-5 text-md-end d-flex align-items-end justify-content-md-end">
                 <form action="{{ route('admin.schedules.deleteAll') }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus SEMUA jadwal?')">
                     @csrf
                     @method('DELETE')
@@ -54,8 +61,16 @@
             </div>
         </div>
 
-
-
+        @if(session('import_errors'))
+            <div class="alert alert-warning border-0 shadow-sm rounded-3 mb-4">
+                <h6 class="alert-heading fw-bold mb-2 small"><i class="bi bi-exclamation-triangle-fill me-2"></i>Beberapa baris dilewati:</h6>
+                <ul class="mb-0 small ps-3">
+                    @foreach(session('import_errors') as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
         <div class="table-responsive rounded-3 overflow-hidden border">
             <table class="table table-hover align-middle mb-0">
                 <thead class="bg-light">

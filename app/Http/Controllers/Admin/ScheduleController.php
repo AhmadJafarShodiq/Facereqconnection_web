@@ -132,54 +132,133 @@ public function import(Request $request)
 
     $inserted = 0;
     $skipped  = 0;
+    $errors   = [];
 
     foreach ($rows as $index => $row) {
-
         if ($index == 0) continue; // lewati header
+        if (empty(array_filter($row))) continue; // lewati baris kosong
 
-        $hari        = $row[0] ?? null;
-        $jam_mulai   = isset($row[1]) ? date('H:i:s', strtotime($row[1])) : null;
-        $jam_selesai = isset($row[2]) ? date('H:i:s', strtotime($row[2])) : null;
-        $nama_mapel  = $row[3] ?? null;
-        $nama_guru   = $row[4] ?? null;
-        $nama_kelas  = $row[5] ?? null;
-        $ruangan     = $row[6] ?? null;
+        $hari        = trim($row[0] ?? '');
+        $jam_mulai   = trim($row[1] ?? '');
+        $jam_selesai = trim($row[2] ?? '');
+        $nama_mapel  = trim($row[3] ?? '');
+        $nama_guru   = trim($row[4] ?? '');
+        $nama_kelas  = trim($row[5] ?? '');
+        $ruangan     = trim($row[6] ?? '');
 
-        // validasi data wajib
+        // Validasi data wajib
         if (!$hari || !$nama_mapel || !$nama_guru || !$nama_kelas || !$jam_mulai || !$jam_selesai) {
             $skipped++;
+            $errors[] = "Baris " . ($index + 1) . ": Data tidak lengkap";
             continue;
         }
 
         $subject = Subject::where('nama_mapel', $nama_mapel)->first();
         $guru = User::where('role','guru')
                     ->whereHas('profile', function($q) use ($nama_guru){
-                        $q->where('nama_lengkap', $nama_guru);
+                        $q->where('nama_lengkap', 'like', "%$nama_guru%");
                     })->first();
         $kelas = Kelas::where('nama_kelas', $nama_kelas)->first();
 
-        if (!$subject || !$guru || !$kelas) {
+        if (!$subject) {
             $skipped++;
+            $errors[] = "Baris " . ($index + 1) . ": Mapel '$nama_mapel' tidak ditemukan";
+            continue;
+        }
+        if (!$guru) {
+            $skipped++;
+            $errors[] = "Baris " . ($index + 1) . ": Guru '$nama_guru' tidak ditemukan";
+            continue;
+        }
+        if (!$kelas) {
+            $skipped++;
+            $errors[] = "Baris " . ($index + 1) . ": Kelas '$nama_kelas' tidak ditemukan";
             continue;
         }
 
-        // simpan jadwal
+        // Format waktu agar valid H:i:s
+        try {
+            $formatted_mulai = date('H:i:s', strtotime($jam_mulai));
+            $formatted_selesai = date('H:i:s', strtotime($jam_selesai));
+        } catch (\Exception $e) {
+            $skipped++;
+            $errors[] = "Baris " . ($index + 1) . ": Format waktu tidak valid";
+            continue;
+        }
+
+        // Cek bentrok sederhana
+        $bentrok = Schedule::where('hari', $hari)
+            ->where(function($q) use ($guru, $kelas) {
+                $q->where('user_id', $guru->id)
+                  ->orWhere('kelas_id', $kelas->id);
+            })
+            ->where('jam_mulai', '<', $formatted_selesai)
+            ->where('jam_selesai', '>', $formatted_mulai)
+            ->exists();
+
+        if ($bentrok) {
+            $skipped++;
+            $errors[] = "Baris " . ($index + 1) . ": Jadwal bentrok (Guru/Kelas)";
+            continue;
+        }
+
         Schedule::create([
             'user_id'     => $guru->id,
             'subject_id'  => $subject->id,
             'kelas_id'    => $kelas->id,
             'hari'        => $hari,
-            'jam_mulai'   => $jam_mulai,
-            'jam_selesai' => $jam_selesai,
+            'jam_mulai'   => $formatted_mulai,
+            'jam_selesai' => $formatted_selesai,
             'ruangan'     => $ruangan,
         ]);
 
         $inserted++;
     }
 
-    return back()->with('success',
-        "Import selesai. $inserted jadwal ditambahkan, $skipped dilewati."
-    );
+    $msg = "Import selesai. $inserted jadwal ditambahkan, $skipped dilewati.";
+    if (!empty($errors)) {
+        session()->flash('import_errors', array_slice($errors, 0, 10));
+    }
+
+    return back()->with('success', $msg);
+}
+
+public function downloadTemplate()
+{
+    $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+
+    // Header
+    $headers = ['hari', 'jam_mulai', 'jam_selesai', 'nama_mapel', 'nama_guru', 'nama_kelas', 'ruangan'];
+    foreach ($headers as $key => $header) {
+        $sheet->setCellValue([$key + 1, 1], $header);
+    }
+
+    // Contoh Data
+    $exampleData = [
+        ['Senin', '07:00', '08:00', 'Matematika', 'Budi Santoso', 'X RPL 1', 'Lab 1'],
+        ['Senin', '08:00', '09:00', 'Bahasa Indonesia', 'Ani Wijaya', 'X RPL 1', 'R.05'],
+    ];
+
+    foreach ($exampleData as $rowKey => $rowData) {
+        foreach ($rowData as $colKey => $cellValue) {
+            $sheet->setCellValue([$colKey + 1, $rowKey + 2], $cellValue);
+        }
+    }
+
+    // Auto size
+    foreach (range('A', 'G') as $columnID) {
+        $sheet->getColumnDimension($columnID)->setAutoSize(true);
+    }
+
+    $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+    
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment;filename="template_import_jadwal.xlsx"');
+    header('Cache-Control: max-age=0');
+    
+    $writer->save('php://output');
+    exit;
 }
 public function deleteAll()
 {

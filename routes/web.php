@@ -26,6 +26,7 @@ Route::middleware(['auth','admin'])
     ->name('admin.')
     ->group(function () {
 
+     Route::get('schedules/template', [ScheduleController::class, 'downloadTemplate'])->name('schedules.template');
      Route::resource('schedules', ScheduleController::class)
             ->only(['index','create','store','edit','update']);
             Route::post('schedules/import', [ScheduleController::class, 'import'])
