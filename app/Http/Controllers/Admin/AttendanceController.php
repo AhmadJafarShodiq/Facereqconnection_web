@@ -44,79 +44,95 @@ class AttendanceController extends Controller
     }
 
 
-   public function export(Request $request)
-{
-    $query = Attendance::with(['user.profile','kelas'])
-        ->orderBy('role')
-        ->orderBy('tanggal');
+    public function export(Request $request)
+    {
+        $bulan = $request->input('bulan', now()->month);
+        $tahun = $request->input('tahun', now()->year);
+        $roleFilter = $request->input('role');
 
-    if ($request->filled('bulan')) {
-        $query->whereMonth('tanggal', $request->bulan);
-    }
+        $daysInMonth = \Carbon\Carbon::create($tahun, $bulan, 1)->daysInMonth;
 
-    if ($request->filled('tahun')) {
-        $query->whereYear('tanggal', $request->tahun);
-    }
+        // Ambil semua data absensi di bulan & tahun tsb
+        $allAttendance = Attendance::whereMonth('tanggal', $bulan)
+            ->whereYear('tanggal', $tahun)
+            ->get();
 
-    if ($request->filled('role')) {
-        $query->where('role', $request->role);
-    }
+        // ================= REKAP GURU =================
+        $rekapGuru = collect();
+        if (!$roleFilter || $roleFilter == 'guru') {
+            $gurus = User::with('profile')->where('role', 'guru')->where('is_active', 1)->get();
+            $rekapGuru = $gurus->map(function ($user) use ($allAttendance, $daysInMonth) {
+                $userAttendance = $allAttendance->where('user_id', $user->id);
+                $days = [];
+                for ($d = 1; $d <= $daysInMonth; $d++) {
+                    $item = $userAttendance->first(fn($i) => $i->tanggal->day == $d);
+                    if ($item) {
+                        if ($item->status == 'hadir') $days[$d] = 'H';
+                        elseif ($item->status == 'terlambat') $days[$d] = 'T';
+                        elseif ($item->status == 'pulang') $days[$d] = 'P';
+                        elseif ($item->status == 'pulang_dini') $days[$d] = 'PD';
+                        else $days[$d] = 'H';
+                    } else {
+                        $days[$d] = '-';
+                    }
+                }
 
-    $data = $query->get();
+                return [
+                    'nama'  => $user->profile->nama_lengkap ?? $user->username,
+                    'days'  => $days,
+                    'hadir' => $userAttendance->whereIn('status', ['hadir', 'pulang', 'pulang_dini'])->count(),
+                    'terlambat' => $userAttendance->where('status', 'terlambat')->count(),
+                    'total' => $userAttendance->count(),
+                ];
+            });
+        }
 
-    // ================= REKAP GURU =================
-$rekapGuru = $data->where('role','guru')
-    ->groupBy('user_id')
-    ->map(function ($items) {
+        // ================= REKAP SISWA =================
+        $rekapSiswa = collect();
+        if (!$roleFilter || $roleFilter == 'siswa') {
+            $classes = \App\Models\Kelas::with(['students.user.profile'])->get();
+            $rekapSiswa = $classes->map(function ($kelas) use ($allAttendance, $daysInMonth) {
+                $siswaData = $kelas->students->map(function ($profile) use ($allAttendance, $daysInMonth) {
+                    $user = $profile->user;
+                    if (!$user || $user->role !== 'siswa' || !$user->is_active) return null;
 
-        $hadir = $items->filter(function ($i) {
-            return in_array($i->status, [
-                'hadir',
-                'terlambat',
-                'pulang',
-                'pulang_dini'
-            ]);
-        })->count();
-
-        return [
-            'nama'  => $items->first()->user->profile->nama_lengkap
-                        ?? $items->first()->user->username,
-            'hadir' => $hadir,
-            'izin'  => 0,
-            'sakit' => 0,
-            'alpha' => 0,
-            'total' => $items->count(),
-        ];
-    });
- $rekapSiswa = $data->where('role','siswa')
-    ->groupBy('kelas_id')
-    ->map(function ($kelasItems) {
-
-        return [
-            'nama_kelas' => optional($kelasItems->first()->kelas)->nama_kelas ?? '-',
-
-            'siswa' => $kelasItems->groupBy('user_id')
-                ->map(function ($items) {
-
-                    $hadir = $items->where('status','hadir')->count();
-                    $terlambat = $items->where('status','terlambat')->count();
+                    $userAttendance = $allAttendance->where('user_id', $user->id);
+                    $days = [];
+                    for ($d = 1; $d <= $daysInMonth; $d++) {
+                        $item = $userAttendance->first(fn($i) => $i->tanggal->day == $d);
+                        if ($item) {
+                            if ($item->status == 'hadir') $days[$d] = 'H';
+                            elseif ($item->status == 'terlambat') $days[$d] = 'T';
+                            else $days[$d] = 'H';
+                        } else {
+                            $days[$d] = '-';
+                        }
+                    }
 
                     return [
-                        'nama'  => $items->first()->user->profile->nama_lengkap
-                                    ?? $items->first()->user->username,
-                        'hadir' => $hadir,
-                        'terlambat' => $terlambat,
-                        'total' => $items->count(),
+                        'nama'  => $profile->nama_lengkap ?? $user->username,
+                        'days'  => $days,
+                        'hadir' => $userAttendance->where('status', 'hadir')->count(),
+                        'terlambat' => $userAttendance->where('status', 'terlambat')->count(),
+                        'total' => $userAttendance->count(),
                     ];
-                })
-        ];
-    });  $pdf = Pdf::loadView('admin.attendance.export', [
-        'rekapGuru' => $rekapGuru,
-        'rekapSiswa' => $rekapSiswa,
-        'bulan' => $request->bulan,
-        'tahun' => $request->tahun,
-    ]);
+                })->filter();
 
-    return $pdf->download('rekap_absensi.pdf');
-}
+                return [
+                    'nama_kelas' => $kelas->nama_kelas,
+                    'siswa' => $siswaData
+                ];
+            })->filter(fn($k) => $k['siswa']->count() > 0);
+        }
+
+        $pdf = Pdf::loadView('admin.attendance.export', [
+            'rekapGuru'   => $rekapGuru,
+            'rekapSiswa'  => $rekapSiswa,
+            'bulan'       => $bulan,
+            'tahun'       => $tahun,
+            'daysInMonth' => $daysInMonth,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('rekap_absensi_' . $bulan . '_' . $tahun . '.pdf');
+    }
 }
